@@ -1,0 +1,952 @@
+MICROSERVICIO 2:
+
+	build.gradle:
+
+		plugins {
+			id 'java'
+			id 'org.springframework.boot' version '3.3.3'
+			id 'io.spring.dependency-management' version '1.1.6'
+			id "io.freefair.lombok" version "8.6"
+		}
+
+		group = 'com.tcs.microservices'
+		version = 'V1'
+
+		java {
+			toolchain {
+				languageVersion = JavaLanguageVersion.of(21)
+			}
+		}
+
+		configurations {
+			compileOnly {
+				extendsFrom annotationProcessor
+			}
+		}
+
+		repositories {
+			mavenCentral()
+		}
+
+		dependencies {
+			// Dependencias de Spring Boot
+			implementation 'org.springframework.boot:spring-boot-starter-actuator'
+			implementation 'org.springframework.boot:spring-boot-starter-amqp'
+			implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+			implementation 'org.springframework.boot:spring-boot-starter-web'
+			implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+			// Hibernate Validator
+			implementation 'org.hibernate.validator:hibernate-validator:8.0.0.Final'
+			
+			// MapStruct
+			implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+			annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+
+			// Lombok
+			compileOnly 'org.projectlombok:lombok' 
+			annotationProcessor 'org.projectlombok:lombok' 
+
+			// Driver para PostgreSQL
+			runtimeOnly 'org.postgresql:postgresql'
+
+			// Herramientas para el desarrollo
+			developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+			// Dependencias para Testing
+			testImplementation 'org.springframework.boot:spring-boot-starter-test'
+			testImplementation 'org.springframework.amqp:spring-rabbit-test'
+			testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+		}
+
+		tasks.named('test') {
+			useJUnitPlatform()
+		}
+
+
+	application.properties:
+
+		spring.application.name=cuentas_movimientos
+
+		#Server Configurations
+		server.port=8081
+		clientes.personas.base.url=http://clientes-personas:8080/api/v1
+
+		# Configuración de la base de datos PostgreSQL
+		spring.datasource.url=jdbc:postgresql://localhost:5434/cuentas_db
+		spring.datasource.username=admin
+		spring.datasource.password=admin
+
+		# Configuración de Hibernate
+		spring.datasource.driver-class-name=org.postgresql.Driver
+		spring.jpa.hibernate.ddl-auto=none
+		spring.jpa.show-sql=true
+		spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+		# Nivel de logging
+		logging.level.org.springframework.web=DEBUG
+		logging.level.org.hibernate.SQL=DEBUG
+		logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
+
+		# Configuración de RabbitMQ
+		spring.rabbitmq.host=rabbitmq
+		spring.rabbitmq.port=5672
+		spring.rabbitmq.username=guest
+		spring.rabbitmq.password=guest
+
+	Script base de datos:
+
+		CREATE TABLE IF NOT EXISTS cuenta (
+		    cuenta_id SERIAL PRIMARY KEY,
+		    unique_id VARCHAR(16) NOT NULL,
+		    numero_cuenta VARCHAR(20) UNIQUE NOT NULL,
+		    tipo_cuenta VARCHAR(3) NOT NULL CHECK (tipo_cuenta IN ('COR', 'AHO')),
+		    saldo_inicial DECIMAL(17, 2) NOT NULL,
+		    estado BOOLEAN NOT NULL,
+		    cliente_id INT NOT NULL,
+		    CONSTRAINT uq_unique_id UNIQUE (unique_id)
+		);
+
+		COMMENT ON TABLE cuenta IS 'Tabla que almacena información sobre las cuentas bancarias de los clientes, incluyendo tipo de cuenta y saldo inicial';
+		COMMENT ON COLUMN cuenta.cuenta_id IS 'Clave primaria única e incremental para la cuenta';
+		COMMENT ON COLUMN cuenta.unique_id IS 'Identificador único generado externamente para la cuenta';
+		COMMENT ON COLUMN cuenta.numero_cuenta IS 'Número de cuenta bancario único';
+		COMMENT ON COLUMN cuenta.tipo_cuenta IS 'Tipo de cuenta: COR = Corriente, AHO = Ahorro';
+		COMMENT ON COLUMN cuenta.saldo_inicial IS 'Saldo inicial de la cuenta';
+		COMMENT ON COLUMN cuenta.estado IS 'Estado de la cuenta: activa o inactiva';
+		COMMENT ON COLUMN cuenta.cliente_id IS 'Relación con el cliente asociado a esta cuenta';
+
+		CREATE TABLE IF NOT EXISTS movimiento (
+		    movimiento_id SERIAL PRIMARY KEY,
+		    unique_id VARCHAR(16) NOT NULL,
+		    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		    tipo_movimiento VARCHAR(3) NOT NULL CHECK (tipo_movimiento IN ('RET', 'DEP')),
+		    valor DECIMAL(17, 2) NOT NULL,
+		    saldo DECIMAL(17, 2) NOT NULL,
+		    numero_cuenta VARCHAR(20) NOT NULL,
+		    CONSTRAINT fk_cuenta_numero FOREIGN KEY (numero_cuenta) REFERENCES cuenta(numero_cuenta),
+		    CONSTRAINT uq_mov_unique_id UNIQUE (unique_id)
+		);
+
+		COMMENT ON TABLE movimiento IS 'Tabla que almacena los movimientos bancarios realizados en las cuentas, incluyendo retiros y depósitos';
+		COMMENT ON COLUMN movimiento.movimiento_id IS 'Clave primaria única e incremental para el movimiento';
+		COMMENT ON COLUMN movimiento.unique_id IS 'Identificador único generado externamente para el movimiento';
+		COMMENT ON COLUMN movimiento.fecha IS 'Fecha en la que se realizó el movimiento';
+		COMMENT ON COLUMN movimiento.tipo_movimiento IS 'Tipo de movimiento: RET = Retiro, DEP = Depósito';
+		COMMENT ON COLUMN movimiento.valor IS 'Valor del movimiento realizado';
+		COMMENT ON COLUMN movimiento.saldo IS 'Saldo en la cuenta después de realizar el movimiento';
+		COMMENT ON COLUMN movimiento.numero_cuenta IS 'Número de cuenta en el cual se realizó el movimiento';
+
+		CREATE INDEX IF NOT EXISTS idx_cuenta_cliente_id ON cuenta (cliente_id);
+		CREATE INDEX IF NOT EXISTS idx_movimiento_fecha ON movimiento (fecha);
+		CREATE INDEX IF NOT EXISTS idx_movimiento_cuenta ON movimiento (numero_cuenta);
+
+	Clase principal:
+
+		package com.tcs.microservices.cuentas_movimientos;
+
+		import org.springframework.boot.SpringApplication;
+		import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+		@SpringBootApplication
+		public class CuentasMovimientosApplication {
+
+			public static void main(String[] args) {
+				SpringApplication.run(CuentasMovimientosApplication.class, args);
+			}
+
+		}
+
+
+
+	Models:
+
+		Cuenta:
+
+			package com.tcs.microservices.cuentas_movimientos.model;
+
+			import java.io.Serializable;
+			import java.math.BigDecimal;
+
+			import jakarta.persistence.Column;
+			import jakarta.persistence.Entity;
+			import jakarta.persistence.GeneratedValue;
+			import jakarta.persistence.GenerationType;
+			import jakarta.persistence.Id;
+			import jakarta.persistence.Table;
+			import jakarta.validation.constraints.DecimalMin;
+			import jakarta.validation.constraints.NotBlank;
+			import jakarta.validation.constraints.NotNull;
+			import jakarta.validation.constraints.Size;
+			import lombok.AllArgsConstructor;
+			import lombok.EqualsAndHashCode;
+			import lombok.Getter;
+			import lombok.NoArgsConstructor;
+			import lombok.Setter;
+			import lombok.ToString;
+
+			@Getter
+			@Setter
+			@NoArgsConstructor
+			@AllArgsConstructor
+			@ToString
+			@EqualsAndHashCode
+			@Entity
+			@Table(name = "cuenta")
+			public class Cuenta implements Serializable {
+
+			    private static final long serialVersionUID = 1L;
+
+			    @Id
+			    @GeneratedValue(strategy = GenerationType.IDENTITY)
+			    @Column(name = "cuenta_id")
+			    private Long id;
+
+			    @NotBlank(message = "El identificador único no puede estar vacío")
+			    @Size(max = 16)
+			    @Column(name = "unique_id", unique = true, nullable = false)
+			    private String uniqueId;
+
+			    @NotBlank(message = "El número de cuenta no puede estar vacío")
+			    @Size(max = 20)
+			    @Column(name = "numero_cuenta", unique = true, nullable = false)
+			    private String numeroCuenta;
+
+			    @NotBlank(message = "El tipo de cuenta no puede estar vacío")
+			    @Size(max = 3)
+			    @Column(name = "tipo_cuenta", nullable = false)
+			    private String tipoCuenta;
+
+			    @NotNull(message = "El saldo inicial no puede estar vacío")
+			    @DecimalMin(value = "0.0", inclusive = true, message = "El saldo inicial debe ser positivo")
+			    @Column(name = "saldo_inicial", precision = 17, scale = 2, nullable = false)
+			    private BigDecimal saldoInicial;
+
+			    @NotNull(message = "El estado no puede estar vacío")
+			    @Column(name = "estado", nullable = false)
+			    private Boolean estado;
+
+			    @NotNull(message = "El cliente asociado no puede estar vacío")
+			    @Column(name = "cliente_id", nullable = false)
+			    private Long clienteId;
+			}
+
+
+		Movimiento:
+
+			package com.tcs.microservices.cuentas_movimientos.model;
+
+			import java.io.Serializable;
+			import java.math.BigDecimal;
+			import java.time.LocalDateTime;
+
+			import jakarta.persistence.Column;
+			import jakarta.persistence.Entity;
+			import jakarta.persistence.GeneratedValue;
+			import jakarta.persistence.GenerationType;
+			import jakarta.persistence.Id;
+			import jakarta.persistence.JoinColumn;
+			import jakarta.persistence.ManyToOne;
+			import jakarta.persistence.PrePersist;
+			import jakarta.persistence.Table;
+			import jakarta.persistence.Temporal;
+			import jakarta.persistence.TemporalType;
+			import jakarta.validation.constraints.DecimalMin;
+			import jakarta.validation.constraints.NotBlank;
+			import jakarta.validation.constraints.NotNull;
+			import jakarta.validation.constraints.Size;
+			import lombok.AllArgsConstructor;
+			import lombok.EqualsAndHashCode;
+			import lombok.Getter;
+			import lombok.NoArgsConstructor;
+			import lombok.Setter;
+			import lombok.ToString;
+
+			@Getter
+			@Setter
+			@NoArgsConstructor
+			@AllArgsConstructor
+			@ToString
+			@EqualsAndHashCode
+			@Entity
+			@Table(name = "movimiento")
+			public class Movimiento implements Serializable {
+
+			    private static final long serialVersionUID = 1L;
+
+			    @Id
+			    @GeneratedValue(strategy = GenerationType.IDENTITY)
+			    @Column(name = "movimiento_id")
+			    private Long id;
+
+			    @NotBlank(message = "El identificador único no puede estar vacío")
+			    @Size(max = 16)
+			    @Column(name = "unique_id", unique = true, nullable = false)
+			    private String uniqueId;
+
+			    @Temporal(TemporalType.TIMESTAMP)
+			    @Column(name = "fecha", nullable = false, updatable = false)
+			    private LocalDateTime fecha;
+
+			    @NotBlank(message = "El tipo de movimiento no puede estar vacío")
+			    @Size(max = 3)
+			    @Column(name = "tipo_movimiento", nullable = false)
+			    private String tipoMovimiento;
+
+			    @NotNull(message = "El valor del movimiento no puede estar vacío")
+			    @DecimalMin(value = "0.0", inclusive = false, message = "El valor del movimiento debe ser mayor que cero")
+			    @Column(name = "valor", precision = 17, scale = 2, nullable = false)
+			    private BigDecimal valor;
+
+			    @NotNull(message = "El saldo no puede estar vacío")
+			    @DecimalMin(value = "0.0", inclusive = true, message = "El saldo debe ser positivo")
+			    @Column(name = "saldo", precision = 17, scale = 2, nullable = false)
+			    private BigDecimal saldo;
+
+			    @ManyToOne
+			    @JoinColumn(name = "numero_cuenta", referencedColumnName = "numero_cuenta", nullable = false)
+			    private Cuenta cuenta;
+
+			    @PrePersist
+			    public void prePersist() {
+			        this.fecha = LocalDateTime.now();
+			    }
+			}
+
+
+	DTO:
+
+		ClienteDTO:
+
+			package com.tcs.microservices.cuentas_movimientos.dto;
+
+			import lombok.Getter;
+			import lombok.Setter;
+
+			@Getter
+			@Setter
+			public class ClienteDTO {
+			    private Long id;
+			    private String nombre;
+			    private String genero;
+			    private Integer edad;
+			    private String identificacion;
+			    private String direccion;
+			    private String telefono;
+			    private Boolean estado;
+			}
+
+		CuentaDTO:
+
+			package com.tcs.microservices.cuentas_movimientos.dto;
+
+			import java.math.BigDecimal;
+
+			import jakarta.validation.constraints.DecimalMin;
+			import jakarta.validation.constraints.NotBlank;
+			import jakarta.validation.constraints.NotNull;
+			import jakarta.validation.constraints.Size;
+			import lombok.Builder;
+			import lombok.Getter;
+			import lombok.Setter;
+
+			@Getter
+			@Setter
+			@Builder
+			public class CuentaDTO {
+
+			    private Long id;
+
+			    private String uniqueId;
+
+			    @NotBlank(message = "El número de cuenta no puede estar vacío")
+			    @Size(max = 20, message = "El número de cuenta no puede tener más de 20 caracteres")
+			    private String numeroCuenta;
+
+			    @NotBlank(message = "El tipo de cuenta no puede estar vacío")
+			    @Size(max = 20, message = "El tipo de cuenta no puede tener más de 20 caracteres")
+			    private String tipoCuenta;
+
+			    @NotNull(message = "El saldo inicial no puede estar vacío")
+			    @DecimalMin(value = "0.0", inclusive = true, message = "El saldo inicial debe ser positivo")
+			    private BigDecimal saldoInicial;
+
+			    @NotNull(message = "El estado no puede estar vacío")
+			    private Boolean estado;
+
+			    @NotNull(message = "El cliente asociado no puede estar vacío")
+			    private Long clienteId;
+			}
+
+		MovimientoDTO:
+
+			package com.tcs.microservices.cuentas_movimientos.dto;
+
+			import java.math.BigDecimal;
+			import java.time.LocalDateTime;
+
+			import jakarta.validation.constraints.DecimalMin;
+			import jakarta.validation.constraints.NotBlank;
+			import jakarta.validation.constraints.NotNull;
+			import jakarta.validation.constraints.Size;
+			import lombok.Builder;
+			import lombok.Getter;
+			import lombok.Setter;
+
+			@Getter
+			@Setter
+			@Builder
+			public class MovimientoDTO {
+
+			    private Long id;
+
+			    private String uniqueId;
+
+			    private LocalDateTime fecha;
+
+			    @NotBlank(message = "El tipo de movimiento no puede estar vacío")
+			    @Size(max = 20, message = "El tipo de movimiento no puede tener más de 20 caracteres")
+			    private String tipoMovimiento;
+
+			    @NotNull(message = "El valor del movimiento no puede estar vacío")
+			    @DecimalMin(value = "0.0", inclusive = false, message = "El valor del movimiento debe ser mayor que cero")
+			    private BigDecimal valor;
+
+			    @NotNull(message = "El saldo no puede estar vacío")
+			    @DecimalMin(value = "0.0", inclusive = true, message = "El saldo debe ser positivo")
+			    private BigDecimal saldo;
+
+			    @NotBlank(message = "El número de cuenta no puede estar vacío")
+			    private String numeroCuenta;
+			}
+
+	Repository:
+
+		CuentaRepository:
+
+			package com.tcs.microservices.cuentas_movimientos.repository;
+
+			import java.util.Optional;
+
+			import org.springframework.data.jpa.repository.JpaRepository;
+			import org.springframework.stereotype.Repository;
+
+			import com.tcs.microservices.cuentas_movimientos.model.Cuenta;
+
+			@Repository
+			public interface CuentaRepository extends JpaRepository<Cuenta, Long> {
+			    Optional<Cuenta> findByNumeroCuenta(String numeroCuenta);
+			}
+
+
+		MovimientoRepository:
+
+			package com.tcs.microservices.cuentas_movimientos.repository;
+
+			import org.springframework.data.jpa.repository.JpaRepository;
+			import org.springframework.stereotype.Repository;
+
+			import com.tcs.microservices.cuentas_movimientos.model.Movimiento;
+
+			@Repository
+			public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
+			}
+
+
+	Service:
+
+		CuentaService:
+
+			package com.tcs.microservices.cuentas_movimientos.service;
+
+			import java.util.List;
+			import java.util.stream.Collectors;
+
+			import org.springframework.beans.factory.annotation.Value;
+			import org.springframework.http.HttpStatus;
+			import org.springframework.http.ResponseEntity;
+			import org.springframework.stereotype.Service;
+			import org.springframework.transaction.annotation.Transactional;
+			import org.springframework.web.client.HttpClientErrorException;
+			import org.springframework.web.client.RestTemplate;
+
+			import com.tcs.microservices.cuentas_movimientos.dto.ClienteDTO;
+			import com.tcs.microservices.cuentas_movimientos.dto.CuentaDTO;
+			import com.tcs.microservices.cuentas_movimientos.model.Cuenta;
+			import com.tcs.microservices.cuentas_movimientos.repository.CuentaRepository;
+			import com.tcs.microservices.cuentas_movimientos.util.mapper.CuentaMovimientoMapper;
+			import com.tcs.microservices.cuentas_movimientos.util.mapper.UniqueIdGeneration;
+
+			import jakarta.persistence.EntityNotFoundException;
+
+			@Service
+			public class CuentaService {
+
+			    private final CuentaRepository cuentaRepository;
+			    private final CuentaMovimientoMapper cuentaMovimientoMapper;
+			    private final UniqueIdGeneration uniqueIdGeneration;
+			    private final RestTemplate restTemplate;
+
+			    @Value("${clientes.personas.base.url}")
+			    private String clientesPersonasBaseUrl;
+
+			    public CuentaService(CuentaRepository cuentaRepository, CuentaMovimientoMapper cuentaMovimientoMapper,
+			            UniqueIdGeneration uniqueIdGeneration, RestTemplate restTemplate) {
+			        this.cuentaRepository = cuentaRepository;
+			        this.cuentaMovimientoMapper = cuentaMovimientoMapper;
+			        this.uniqueIdGeneration = uniqueIdGeneration;
+			        this.restTemplate = restTemplate;
+			    }
+
+			    @Transactional(readOnly = true)
+			    public List<CuentaDTO> obtenerCuentas() {
+			        return cuentaRepository.findAll()
+			                .stream()
+			                .map(cuentaMovimientoMapper::cuentaToCuentaDTO)
+			                .collect(Collectors.toList());
+			    }
+
+			    @Transactional(readOnly = true)
+			    public CuentaDTO obtenerCuentaPorId(Long id) {
+			        Cuenta cuenta = cuentaRepository.findById(id)
+			                .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada"));
+			        return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta);
+			    }
+
+			    @Transactional
+			    public CuentaDTO crearCuenta(CuentaDTO cuentaDTO) {
+			        validarClienteExistente(cuentaDTO.getClienteId());
+
+			        Cuenta cuenta = cuentaMovimientoMapper.cuentaDTOToCuenta(cuentaDTO);
+
+			        cuenta.setUniqueId(uniqueIdGeneration.getUniqueId());
+
+			        cuenta = cuentaRepository.save(cuenta);
+			        return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta);
+			    }
+
+			    private void validarClienteExistente(Long clienteId) {
+			        String url = clientesPersonasBaseUrl + "/clientes/" + clienteId;
+
+			        try {
+			            ResponseEntity<ClienteDTO> response = restTemplate.getForEntity(url, ClienteDTO.class);
+
+			            if (response.getStatusCode() != HttpStatus.OK) {
+			                throw new EntityNotFoundException("Cliente no encontrado con el ID: " + clienteId);
+			            }
+
+			        } catch (HttpClientErrorException.NotFound e) {
+			            throw new EntityNotFoundException("Cliente no encontrado con el ID: " + clienteId);
+			        }
+			    }
+
+			    @Transactional
+			    public CuentaDTO actualizarCuenta(Long id, CuentaDTO cuentaDTO) {
+			        Cuenta cuentaExistente = cuentaRepository.findById(id)
+			                .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada"));
+			        cuentaMovimientoMapper.cuentaDTOToCuenta(cuentaDTO);
+			        cuentaExistente.setNumeroCuenta(cuentaDTO.getNumeroCuenta());
+			        cuentaExistente.setSaldoInicial(cuentaDTO.getSaldoInicial());
+			        cuentaRepository.save(cuentaExistente);
+			        return cuentaMovimientoMapper.cuentaToCuentaDTO(cuentaExistente);
+			    }
+
+			    @Transactional
+			    public void eliminarCuenta(Long id) {
+			        Cuenta cuenta = cuentaRepository.findById(id)
+			                .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada"));
+			        cuentaRepository.delete(cuenta);
+			    }
+			}
+
+
+		MovimientoPublisher:
+
+			package com.tcs.microservices.cuentas_movimientos.service;
+
+			import org.springframework.amqp.rabbit.core.RabbitTemplate;
+			import org.springframework.beans.factory.annotation.Autowired;
+			import org.springframework.stereotype.Service;
+
+			import com.tcs.microservices.cuentas_movimientos.config.RabbitMQConfig;
+
+			@Service
+			public class MovimientoPublisher {
+
+			    @Autowired
+			    private RabbitTemplate rabbitTemplate;
+
+			    public void publishMovimiento(String mensaje) {
+			        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, RabbitMQConfig.ROUTING_KEY, mensaje);
+			    }
+			}
+
+
+		MovimientoService:
+
+			package com.tcs.microservices.cuentas_movimientos.service;
+
+			import java.util.List;
+			import java.util.stream.Collectors;
+
+			import org.springframework.stereotype.Service;
+			import org.springframework.transaction.annotation.Transactional;
+
+			import com.tcs.microservices.cuentas_movimientos.dto.MovimientoDTO;
+			import com.tcs.microservices.cuentas_movimientos.model.Cuenta;
+			import com.tcs.microservices.cuentas_movimientos.model.Movimiento;
+			import com.tcs.microservices.cuentas_movimientos.repository.CuentaRepository;
+			import com.tcs.microservices.cuentas_movimientos.repository.MovimientoRepository;
+			import com.tcs.microservices.cuentas_movimientos.util.mapper.CuentaMovimientoMapper;
+			import com.tcs.microservices.cuentas_movimientos.util.mapper.UniqueIdGeneration;
+
+			import jakarta.persistence.EntityNotFoundException;
+
+			@Service
+			public class MovimientoService {
+
+			    private final MovimientoRepository movimientoRepository;
+			    private final CuentaRepository cuentaRepository;
+			    private final CuentaMovimientoMapper cuentaMovimientoMapper;
+			    private final UniqueIdGeneration uniqueIdGeneration;
+
+			    public MovimientoService(MovimientoRepository movimientoRepository, CuentaRepository cuentaRepository,
+			            CuentaMovimientoMapper cuentaMovimientoMapper,
+			            UniqueIdGeneration uniqueIdGeneration) {
+			        this.movimientoRepository = movimientoRepository;
+			        this.cuentaRepository = cuentaRepository;
+			        this.cuentaMovimientoMapper = cuentaMovimientoMapper;
+			        this.uniqueIdGeneration = uniqueIdGeneration;
+			    }
+
+			    @Transactional(readOnly = true)
+			    public List<MovimientoDTO> obtenerMovimientos() {
+			        return movimientoRepository.findAll()
+			                .stream()
+			                .map(cuentaMovimientoMapper::movimientoToMovimientoDTO)
+			                .collect(Collectors.toList());
+			    }
+
+			    @Transactional(readOnly = true)
+			    public MovimientoDTO obtenerMovimientoPorId(Long id) {
+			        Movimiento movimiento = movimientoRepository.findById(id)
+			                .orElseThrow(() -> new EntityNotFoundException("Movimiento no encontrado"));
+			        return cuentaMovimientoMapper.movimientoToMovimientoDTO(movimiento);
+			    }
+
+			    @Transactional
+			    public MovimientoDTO crearMovimiento(MovimientoDTO movimientoDTO) {
+			        Cuenta cuenta = cuentaRepository.findByNumeroCuenta(movimientoDTO.getNumeroCuenta())
+			                .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada"));
+
+			        Movimiento movimiento = cuentaMovimientoMapper.movimientoDTOToMovimiento(movimientoDTO);
+			        movimiento.setCuenta(cuenta);
+			        movimiento.setUniqueId(uniqueIdGeneration.getUniqueId());
+			        movimiento = movimientoRepository.save(movimiento);
+			        return cuentaMovimientoMapper.movimientoToMovimientoDTO(movimiento);
+			    }
+
+			    @Transactional
+			    public MovimientoDTO actualizarMovimiento(Long id, MovimientoDTO movimientoDTO) {
+			        Movimiento movimientoExistente = movimientoRepository.findById(id)
+			                .orElseThrow(() -> new EntityNotFoundException("Movimiento no encontrado"));
+
+			        movimientoExistente.setTipoMovimiento(movimientoDTO.getTipoMovimiento());
+			        movimientoExistente.setValor(movimientoDTO.getValor());
+			        movimientoExistente.setSaldo(movimientoDTO.getSaldo());
+			        movimientoExistente.getCuenta().setNumeroCuenta(movimientoDTO.getNumeroCuenta());
+
+			        movimientoRepository.save(movimientoExistente);
+			        return cuentaMovimientoMapper.movimientoToMovimientoDTO(movimientoExistente);
+			    }
+
+			    @Transactional
+			    public void eliminarMovimiento(Long id) {
+			        Movimiento movimiento = movimientoRepository.findById(id)
+			                .orElseThrow(() -> new EntityNotFoundException("Movimiento no encontrado"));
+			        movimientoRepository.delete(movimiento);
+			    }
+			}
+
+
+	Controller:
+
+		CuentaController:
+
+			package com.tcs.microservices.cuentas_movimientos.controller;
+
+			import java.util.List;
+
+			import org.springframework.http.HttpStatus;
+			import org.springframework.http.ResponseEntity;
+			import org.springframework.validation.annotation.Validated;
+			import org.springframework.web.bind.annotation.CrossOrigin;
+			import org.springframework.web.bind.annotation.DeleteMapping;
+			import org.springframework.web.bind.annotation.GetMapping;
+			import org.springframework.web.bind.annotation.PathVariable;
+			import org.springframework.web.bind.annotation.PostMapping;
+			import org.springframework.web.bind.annotation.PutMapping;
+			import org.springframework.web.bind.annotation.RequestBody;
+			import org.springframework.web.bind.annotation.RequestMapping;
+			import org.springframework.web.bind.annotation.RequestMethod;
+			import org.springframework.web.bind.annotation.RestController;
+
+			import com.tcs.microservices.cuentas_movimientos.dto.CuentaDTO;
+			import com.tcs.microservices.cuentas_movimientos.service.CuentaService;
+
+			@CrossOrigin(origins = "*", allowedHeaders = "*", methods = { RequestMethod.GET, RequestMethod.POST,
+			        RequestMethod.PUT, RequestMethod.DELETE })
+			@RestController
+			@RequestMapping("/api/v1/cuentas")
+			public class CuentaController {
+
+			    private final CuentaService cuentaService;
+
+			    public CuentaController(CuentaService cuentaService) {
+			        this.cuentaService = cuentaService;
+			    }
+
+			    @GetMapping
+			    public ResponseEntity<List<CuentaDTO>> obtenerCuentas() {
+			        List<CuentaDTO> cuentas = cuentaService.obtenerCuentas();
+			        return ResponseEntity.ok(cuentas);
+			    }
+
+			    @GetMapping("/{id}")
+			    public ResponseEntity<CuentaDTO> obtenerCuentaPorId(@PathVariable Long id) {
+			        CuentaDTO cuenta = cuentaService.obtenerCuentaPorId(id);
+			        return ResponseEntity.ok(cuenta);
+			    }
+
+			    @PostMapping
+			    public ResponseEntity<CuentaDTO> crearCuenta(@Validated @RequestBody CuentaDTO cuentaDTO) {
+			        CuentaDTO nuevaCuenta = cuentaService.crearCuenta(cuentaDTO);
+			        return new ResponseEntity<>(nuevaCuenta, HttpStatus.CREATED);
+			    }
+
+			    @PutMapping("/{id}")
+			    public ResponseEntity<CuentaDTO> actualizarCuenta(@PathVariable Long id,
+			            @Validated @RequestBody CuentaDTO cuentaDTO) {
+			        CuentaDTO cuentaActualizada = cuentaService.actualizarCuenta(id, cuentaDTO);
+			        return ResponseEntity.ok(cuentaActualizada);
+			    }
+
+			    @DeleteMapping("/{id}")
+			    public ResponseEntity<Void> eliminarCuenta(@PathVariable Long id) {
+			        cuentaService.eliminarCuenta(id);
+			        return ResponseEntity.noContent().build();
+			    }
+			}
+
+
+		MovimientoController:
+
+			package com.tcs.microservices.cuentas_movimientos.controller;
+
+			import java.util.List;
+
+			import org.springframework.http.HttpStatus;
+			import org.springframework.http.ResponseEntity;
+			import org.springframework.validation.annotation.Validated;
+			import org.springframework.web.bind.annotation.CrossOrigin;
+			import org.springframework.web.bind.annotation.DeleteMapping;
+			import org.springframework.web.bind.annotation.GetMapping;
+			import org.springframework.web.bind.annotation.PathVariable;
+			import org.springframework.web.bind.annotation.PostMapping;
+			import org.springframework.web.bind.annotation.PutMapping;
+			import org.springframework.web.bind.annotation.RequestBody;
+			import org.springframework.web.bind.annotation.RequestMapping;
+			import org.springframework.web.bind.annotation.RequestMethod;
+			import org.springframework.web.bind.annotation.RestController;
+
+			import com.tcs.microservices.cuentas_movimientos.dto.MovimientoDTO;
+			import com.tcs.microservices.cuentas_movimientos.service.MovimientoPublisher;
+			import com.tcs.microservices.cuentas_movimientos.service.MovimientoService;
+
+			@CrossOrigin(origins = "*", allowedHeaders = "*", methods = { RequestMethod.GET, RequestMethod.POST,
+			        RequestMethod.PUT, RequestMethod.DELETE })
+			@RestController
+			@RequestMapping("/api/v1/movimientos")
+			public class MovimientoController {
+
+			    private final MovimientoService movimientoService;
+			    private final MovimientoPublisher movimientoPublisher;
+
+			    public MovimientoController(MovimientoService movimientoService, MovimientoPublisher movimientoPublisher) {
+			        this.movimientoService = movimientoService;
+			        this.movimientoPublisher = movimientoPublisher;
+			    }
+
+			    @GetMapping
+			    public ResponseEntity<List<MovimientoDTO>> obtenerMovimientos() {
+			        List<MovimientoDTO> movimientos = movimientoService.obtenerMovimientos();
+			        return ResponseEntity.ok(movimientos);
+			    }
+
+			    @GetMapping("/{id}")
+			    public ResponseEntity<MovimientoDTO> obtenerMovimientoPorId(@PathVariable Long id) {
+			        MovimientoDTO movimiento = movimientoService.obtenerMovimientoPorId(id);
+			        return ResponseEntity.ok(movimiento);
+			    }
+
+			    @PostMapping
+			    public ResponseEntity<MovimientoDTO> crearMovimiento(@Validated @RequestBody MovimientoDTO movimientoDTO) {
+			        MovimientoDTO nuevoMovimiento = movimientoService.crearMovimiento(movimientoDTO);
+			        return new ResponseEntity<>(nuevoMovimiento, HttpStatus.CREATED);
+			    }
+
+			    @PutMapping("/{id}")
+			    public ResponseEntity<MovimientoDTO> actualizarMovimiento(@PathVariable Long id,
+			            @Validated @RequestBody MovimientoDTO movimientoDTO) {
+			        MovimientoDTO movimientoActualizado = movimientoService.actualizarMovimiento(id, movimientoDTO);
+			        return ResponseEntity.ok(movimientoActualizado);
+			    }
+
+			    @DeleteMapping("/{id}")
+			    public ResponseEntity<Void> eliminarMovimiento(@PathVariable Long id) {
+			        movimientoService.eliminarMovimiento(id);
+			        return ResponseEntity.noContent().build();
+			    }
+
+			    // Registrar un movimiento y publicar un mensaje en RabbitMQ
+			    @PostMapping("/registrar")
+			    public ResponseEntity<String> registrarMovimiento(@Validated @RequestBody MovimientoDTO movimientoDTO) {
+			        // Guardar el movimiento en la base de datos
+			        MovimientoDTO nuevoMovimiento = movimientoService.crearMovimiento(movimientoDTO);
+
+			        // Publicar el mensaje a RabbitMQ
+			        movimientoPublisher.publishMovimiento("Movimiento registrado: " + nuevoMovimiento.toString());
+
+			        return ResponseEntity.ok("Movimiento registrado y mensaje publicado.");
+			    }
+			}
+
+
+	Config:
+
+		RabbitMQConfig:
+
+			package com.tcs.microservices.cuentas_movimientos.config;
+
+			import org.springframework.amqp.core.Binding;
+			import org.springframework.amqp.core.BindingBuilder;
+			import org.springframework.amqp.core.DirectExchange;
+			import org.springframework.amqp.core.Queue;
+			import org.springframework.context.annotation.Bean;
+			import org.springframework.context.annotation.Configuration;
+
+			@Configuration
+			public class RabbitMQConfig {
+
+			    public static final String EXCHANGE_NAME = "movimientos_exchange";
+			    public static final String QUEUE_NAME = "movimientos_queue";
+			    public static final String ROUTING_KEY = "movimientos_routingKey";
+
+			    @Bean
+			    public DirectExchange directExchange() {
+			        return new DirectExchange(EXCHANGE_NAME);
+			    }
+
+			    @Bean
+			    public Queue queue() {
+			        return new Queue(QUEUE_NAME);
+			    }
+
+			    @Bean
+			    public Binding binding(Queue queue, DirectExchange exchange) {
+			        return BindingBuilder.bind(queue).to(exchange).with(ROUTING_KEY);
+			    }
+			}
+
+
+		RestTemplateConfig:
+
+			package com.tcs.microservices.cuentas_movimientos.config;
+
+			import org.springframework.context.annotation.Bean;
+			import org.springframework.context.annotation.Configuration;
+			import org.springframework.web.client.RestTemplate;
+
+			@Configuration
+			public class RestTemplateConfig {
+
+			    @Bean
+			    public RestTemplate restTemplate() {
+			        return new RestTemplate();
+			    }
+			}
+
+
+	Util:
+
+		UniqueIdGeneration:
+
+			package com.tcs.microservices.cuentas_movimientos.util.mapper;
+
+			import java.util.Random;
+
+			import org.springframework.stereotype.Component;
+
+			@Component
+			public class UniqueIdGeneration {
+			    public String generateUniqueId() {
+			        String letters = generateRandomLetters(3);
+			        String numbers = generateRandomNumbers(5);
+			        String rawId = letters + "00" + numbers;
+			        return rawId;
+			    }
+
+			    private String generateRandomLetters(int length) {
+			        Random random = new Random();
+			        StringBuilder sb = new StringBuilder(length);
+			        for (int i = 0; i < length; i++) {
+			            char letter = (char) ('A' + random.nextInt(26));
+			            sb.append(letter);
+			        }
+			        return sb.toString();
+			    }
+
+			    private String generateRandomNumbers(int length) {
+			        Random random = new Random();
+			        StringBuilder sb = new StringBuilder(length);
+			        for (int i = 0; i < length; i++) {
+			            int number = random.nextInt(10);
+			            sb.append(number);
+			        }
+			        return sb.toString();
+			    }
+
+			    public String getUniqueId() {
+			        return generateUniqueId();
+			    }
+			}
+
+
+	Mappers:
+
+		package com.tcs.microservices.cuentas_movimientos.util.mapper;
+
+		import org.mapstruct.Mapper;
+		import org.mapstruct.Mapping;
+		import org.mapstruct.factory.Mappers;
+
+		import com.tcs.microservices.cuentas_movimientos.dto.CuentaDTO;
+		import com.tcs.microservices.cuentas_movimientos.dto.MovimientoDTO;
+		import com.tcs.microservices.cuentas_movimientos.model.Cuenta;
+		import com.tcs.microservices.cuentas_movimientos.model.Movimiento;
+
+		@Mapper(componentModel = "spring")
+		public interface CuentaMovimientoMapper {
+
+		        CuentaMovimientoMapper INSTANCE = Mappers.getMapper(CuentaMovimientoMapper.class);
+
+		        CuentaDTO cuentaToCuentaDTO(Cuenta cuenta);
+
+		        Cuenta cuentaDTOToCuenta(CuentaDTO cuentaDTO);
+
+		        @Mapping(source = "cuenta.numeroCuenta", target = "numeroCuenta")
+		        MovimientoDTO movimientoToMovimientoDTO(Movimiento movimiento);
+
+		        @Mapping(source = "numeroCuenta", target = "cuenta.numeroCuenta")
+		        Movimiento movimientoDTOToMovimiento(MovimientoDTO movimientoDTO);
+		}

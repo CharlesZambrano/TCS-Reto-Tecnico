@@ -15,4 +15,3 @@ Se agregan 2 scrips de base de datos para que al generar los contenedores no int
 
     @Column(name = "BLOCKED_BALANCE", precision = 17, scale = 2, nullable = false)
     private BigDecimal blockedBalance;
-
