@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.3.3'
 	id 'io.spring.dependency-management' version '1.1.6'
+	id "io.freefair.lombok" version "8.6" // Lombok plugin para evitar configuración manual de lombok
 }
 
 group = 'com.tcs.microservices'
@@ -9,7 +10,7 @@ version = '0.0.1-SNAPSHOT'
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
+		languageVersion = JavaLanguageVersion.of(21) // Compatibilidad con Java 21
 	}
 }
 
@@ -20,25 +21,40 @@ configurations {
 }
 
 repositories {
-	mavenCentral()
+	mavenCentral() // Usamos Maven Central como repositorio principal
 }
 
 dependencies {
+	// Dependencias de Spring Boot
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-amqp'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.hibernate.validator:hibernate-validator:8.0.0.Final'
-	compileOnly 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	// Hibernate Validator (Validación de Bean)
+	implementation 'org.hibernate.validator:hibernate-validator:8.0.0.Final'
+	
+	// MapStruct (incluye la dependencia principal y el procesador de anotaciones)
+	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+
+	// Lombok (para generar código como getters, setters, etc.)
+	compileOnly 'org.projectlombok:lombok' 
+	annotationProcessor 'org.projectlombok:lombok' 
+
+	// Driver para PostgreSQL
 	runtimeOnly 'org.postgresql:postgresql'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.amqp:spring-rabbit-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// Herramientas para el desarrollo
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	// Dependencias para Testing
+	testImplementation 'org.springframework.boot:spring-boot-starter-test' // Testing con Spring Boot
+	testImplementation 'org.springframework.amqp:spring-rabbit-test'      // Testing de mensajería con RabbitMQ
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'            // JUnit Platform Launcher
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform() // Configuración para usar JUnit 5
 }
