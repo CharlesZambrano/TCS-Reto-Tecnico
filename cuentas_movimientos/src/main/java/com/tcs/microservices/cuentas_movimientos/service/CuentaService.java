@@ -59,10 +59,9 @@ public class CuentaService {
         validarClienteExistente(cuentaDTO.getClienteId());
 
         Cuenta cuenta = cuentaMovimientoMapper.cuentaDTOToCuenta(cuentaDTO);
-
         cuenta.setUniqueId(uniqueIdGeneration.getUniqueId());
-
         cuenta = cuentaRepository.save(cuenta);
+
         return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta);
     }
 
@@ -71,11 +70,9 @@ public class CuentaService {
 
         try {
             ResponseEntity<ClienteDTO> response = restTemplate.getForEntity(url, ClienteDTO.class);
-
             if (response.getStatusCode() != HttpStatus.OK) {
                 throw new EntityNotFoundException("Cliente no encontrado con el ID: " + clienteId);
             }
-
         } catch (HttpClientErrorException.NotFound e) {
             throw new EntityNotFoundException("Cliente no encontrado con el ID: " + clienteId);
         }
@@ -85,10 +82,12 @@ public class CuentaService {
     public CuentaDTO actualizarCuenta(Long id, CuentaDTO cuentaDTO) {
         Cuenta cuentaExistente = cuentaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada"));
+
         cuentaMovimientoMapper.cuentaDTOToCuenta(cuentaDTO);
         cuentaExistente.setNumeroCuenta(cuentaDTO.getNumeroCuenta());
         cuentaExistente.setSaldoInicial(cuentaDTO.getSaldoInicial());
         cuentaRepository.save(cuentaExistente);
+
         return cuentaMovimientoMapper.cuentaToCuentaDTO(cuentaExistente);
     }
 

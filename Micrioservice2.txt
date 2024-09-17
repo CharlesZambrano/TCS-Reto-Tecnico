@@ -456,7 +456,7 @@ MICROSERVICIO 2:
 	Service:
 
 		CuentaService:
-
+		
 			package com.tcs.microservices.cuentas_movimientos.service;
 
 			import java.util.List;
@@ -518,10 +518,9 @@ MICROSERVICIO 2:
 			        validarClienteExistente(cuentaDTO.getClienteId());
 
 			        Cuenta cuenta = cuentaMovimientoMapper.cuentaDTOToCuenta(cuentaDTO);
-
 			        cuenta.setUniqueId(uniqueIdGeneration.getUniqueId());
-
 			        cuenta = cuentaRepository.save(cuenta);
+
 			        return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta);
 			    }
 
@@ -530,11 +529,9 @@ MICROSERVICIO 2:
 
 			        try {
 			            ResponseEntity<ClienteDTO> response = restTemplate.getForEntity(url, ClienteDTO.class);
-
 			            if (response.getStatusCode() != HttpStatus.OK) {
 			                throw new EntityNotFoundException("Cliente no encontrado con el ID: " + clienteId);
 			            }
-
 			        } catch (HttpClientErrorException.NotFound e) {
 			            throw new EntityNotFoundException("Cliente no encontrado con el ID: " + clienteId);
 			        }
@@ -544,10 +541,12 @@ MICROSERVICIO 2:
 			    public CuentaDTO actualizarCuenta(Long id, CuentaDTO cuentaDTO) {
 			        Cuenta cuentaExistente = cuentaRepository.findById(id)
 			                .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada"));
+
 			        cuentaMovimientoMapper.cuentaDTOToCuenta(cuentaDTO);
 			        cuentaExistente.setNumeroCuenta(cuentaDTO.getNumeroCuenta());
 			        cuentaExistente.setSaldoInicial(cuentaDTO.getSaldoInicial());
 			        cuentaRepository.save(cuentaExistente);
+
 			        return cuentaMovimientoMapper.cuentaToCuentaDTO(cuentaExistente);
 			    }
 
@@ -558,7 +557,6 @@ MICROSERVICIO 2:
 			        cuentaRepository.delete(cuenta);
 			    }
 			}
-
 
 		MovimientoPublisher:
 
@@ -580,7 +578,6 @@ MICROSERVICIO 2:
 			        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, RabbitMQConfig.ROUTING_KEY, mensaje);
 			    }
 			}
-
 
 		MovimientoService:
 
@@ -668,6 +665,25 @@ MICROSERVICIO 2:
 			    }
 			}
 
+		ClienteConsumer:
+
+			package com.tcs.microservices.cuentas_movimientos.service;
+
+			import org.springframework.amqp.rabbit.annotation.RabbitListener;
+			import org.springframework.stereotype.Service;
+
+			import com.tcs.microservices.cuentas_movimientos.config.RabbitMQConfig;
+
+			@Service
+			public class ClienteConsumer {
+
+			    @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
+			    public void recibirClienteEvento(String mensaje) {
+			        System.out.println("Evento recibido: " + mensaje);
+			        // Aquí puedes procesar el mensaje, por ejemplo, crear, actualizar o eliminar
+			        // cuentas
+			    }
+			}
 
 	Controller:
 
@@ -838,9 +854,9 @@ MICROSERVICIO 2:
 			@Configuration
 			public class RabbitMQConfig {
 
-			    public static final String EXCHANGE_NAME = "movimientos_exchange";
-			    public static final String QUEUE_NAME = "movimientos_queue";
-			    public static final String ROUTING_KEY = "movimientos_routingKey";
+			    public static final String EXCHANGE_NAME = "clientes_exchange";
+			    public static final String QUEUE_NAME = "clientes_queue";
+			    public static final String ROUTING_KEY = "clientes_routingKey";
 
 			    @Bean
 			    public DirectExchange directExchange() {
@@ -858,7 +874,6 @@ MICROSERVICIO 2:
 			    }
 			}
 
-
 		RestTemplateConfig:
 
 			package com.tcs.microservices.cuentas_movimientos.config;
@@ -875,7 +890,6 @@ MICROSERVICIO 2:
 			        return new RestTemplate();
 			    }
 			}
-
 
 	Util:
 

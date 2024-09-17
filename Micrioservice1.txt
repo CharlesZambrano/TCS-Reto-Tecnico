@@ -393,10 +393,13 @@ MICROSERVICIO 1:
 
 			    private final ClienteRepository clienteRepository;
 			    private final ClientePersonaMapper clientePersonaMapper;
+			    private final ClientePublisher clientePublisher;
 
-			    public ClienteService(ClienteRepository clienteRepository, ClientePersonaMapper clientePersonaMapper) {
+			    public ClienteService(ClienteRepository clienteRepository, ClientePersonaMapper clientePersonaMapper,
+			            ClientePublisher clientePublisher) {
 			        this.clienteRepository = clienteRepository;
 			        this.clientePersonaMapper = clientePersonaMapper;
+			        this.clientePublisher = clientePublisher;
 			    }
 
 			    @Transactional(readOnly = true)
@@ -418,6 +421,10 @@ MICROSERVICIO 1:
 			    public ClienteDTO crearCliente(ClienteDTO clienteDTO) {
 			        Cliente cliente = clientePersonaMapper.clienteDTOToCliente(clienteDTO);
 			        cliente = clienteRepository.save(cliente);
+
+			        String mensaje = "Cliente creado con ID: " + cliente.getId();
+			        clientePublisher.publishClienteCreado(mensaje);
+
 			        return clientePersonaMapper.clienteToClienteDTO(cliente);
 			    }
 
@@ -425,12 +432,16 @@ MICROSERVICIO 1:
 			    public ClienteDTO actualizarCliente(Long id, ClienteDTO clienteDTO) {
 			        Cliente clienteExistente = clienteRepository.findById(id)
 			                .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado"));
+
 			        clientePersonaMapper.clienteDTOToCliente(clienteDTO);
 			        clienteExistente.setContraseña(clienteDTO.getContraseña());
 			        clienteExistente.setEstado(clienteDTO.getEstado());
 			        clienteExistente.getPersona().setNombre(clienteDTO.getPersona().getNombre());
-			        // Resto de los setters para persona
 			        clienteRepository.save(clienteExistente);
+
+			        String mensaje = "Cliente actualizado con ID: " + clienteExistente.getId();
+			        clientePublisher.publishClienteActualizado(mensaje);
+
 			        return clientePersonaMapper.clienteToClienteDTO(clienteExistente);
 			    }
 
@@ -438,11 +449,14 @@ MICROSERVICIO 1:
 			    public void eliminarCliente(Long id) {
 			        Cliente cliente = clienteRepository.findById(id)
 			                .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado"));
+
 			        clienteRepository.delete(cliente);
+
+			        String mensaje = "Cliente eliminado con ID: " + cliente.getId();
+			        clientePublisher.publishClienteEliminado(mensaje);
 			    }
 			}
-
-
+		
 		MovimientoConsumer:
 
 			package com.tcs.microservices.clientes_personas.service;
@@ -463,6 +477,37 @@ MICROSERVICIO 1:
 			    }
 			}
 
+
+		ClientePublisher:
+
+			package com.tcs.microservices.clientes_personas.service;
+
+			import org.springframework.amqp.rabbit.core.RabbitTemplate;
+			import org.springframework.stereotype.Service;
+
+			import com.tcs.microservices.clientes_personas.config.RabbitMQConfig;
+
+			@Service
+			public class ClientePublisher {
+
+			    private final RabbitTemplate rabbitTemplate;
+
+			    public ClientePublisher(RabbitTemplate rabbitTemplate) {
+			        this.rabbitTemplate = rabbitTemplate;
+			    }
+
+			    public void publishClienteCreado(String mensaje) {
+			        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, RabbitMQConfig.ROUTING_KEY, mensaje);
+			    }
+
+			    public void publishClienteActualizado(String mensaje) {
+			        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, RabbitMQConfig.ROUTING_KEY, mensaje);
+			    }
+
+			    public void publishClienteEliminado(String mensaje) {
+			        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, RabbitMQConfig.ROUTING_KEY, mensaje);
+			    }
+			}
 
 	Controller:
 
@@ -536,40 +581,39 @@ MICROSERVICIO 1:
 
 	Config:
 
-		package com.tcs.microservices.clientes_personas.config;
+		RabbitMQConfig:
 
-		import org.springframework.amqp.core.Binding;
-		import org.springframework.amqp.core.BindingBuilder;
-		import org.springframework.amqp.core.DirectExchange;
-		import org.springframework.amqp.core.Queue;
-		import org.springframework.context.annotation.Bean;
-		import org.springframework.context.annotation.Configuration;
+			package com.tcs.microservices.clientes_personas.config;
 
-		@Configuration
-		public class RabbitMQConfig {
+			import org.springframework.amqp.core.Binding;
+			import org.springframework.amqp.core.BindingBuilder;
+			import org.springframework.amqp.core.DirectExchange;
+			import org.springframework.amqp.core.Queue;
+			import org.springframework.context.annotation.Bean;
+			import org.springframework.context.annotation.Configuration;
 
-		    public static final String EXCHANGE_NAME = "movimientos_exchange";
-		    public static final String QUEUE_NAME = "movimientos_queue";
-		    public static final String ROUTING_KEY = "movimientos_routingKey";
+			@Configuration
+			public class RabbitMQConfig {
 
-		    @Bean
-		    public DirectExchange directExchange() {
-		        return new DirectExchange(EXCHANGE_NAME);
-		    }
+			    public static final String EXCHANGE_NAME = "clientes_exchange";
+			    public static final String QUEUE_NAME = "clientes_queue";
+			    public static final String ROUTING_KEY = "clientes_routingKey";
 
-		    @Bean
-		    public Queue queue() {
-		        return new Queue(QUEUE_NAME);
-		    }
+			    @Bean
+			    public DirectExchange directExchange() {
+			        return new DirectExchange(EXCHANGE_NAME);
+			    }
 
-		    @Bean
-		    public Binding binding(Queue queue, DirectExchange exchange) {
-		        return BindingBuilder.bind(queue).to(exchange).with(ROUTING_KEY);
-		    }
-		}
+			    @Bean
+			    public Queue queue() {
+			        return new Queue(QUEUE_NAME);
+			    }
 
-
-
+			    @Bean
+			    public Binding binding(Queue queue, DirectExchange exchange) {
+			        return BindingBuilder.bind(queue).to(exchange).with(ROUTING_KEY);
+			    }
+			}
 
 	Util:
 

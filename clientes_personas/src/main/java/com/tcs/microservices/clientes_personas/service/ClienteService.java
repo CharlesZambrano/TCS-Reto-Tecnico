@@ -18,10 +18,13 @@ public class ClienteService {
 
     private final ClienteRepository clienteRepository;
     private final ClientePersonaMapper clientePersonaMapper;
+    private final ClientePublisher clientePublisher;
 
-    public ClienteService(ClienteRepository clienteRepository, ClientePersonaMapper clientePersonaMapper) {
+    public ClienteService(ClienteRepository clienteRepository, ClientePersonaMapper clientePersonaMapper,
+            ClientePublisher clientePublisher) {
         this.clienteRepository = clienteRepository;
         this.clientePersonaMapper = clientePersonaMapper;
+        this.clientePublisher = clientePublisher;
     }
 
     @Transactional(readOnly = true)
@@ -43,6 +46,10 @@ public class ClienteService {
     public ClienteDTO crearCliente(ClienteDTO clienteDTO) {
         Cliente cliente = clientePersonaMapper.clienteDTOToCliente(clienteDTO);
         cliente = clienteRepository.save(cliente);
+
+        String mensaje = "Cliente creado con ID: " + cliente.getId();
+        clientePublisher.publishClienteCreado(mensaje);
+
         return clientePersonaMapper.clienteToClienteDTO(cliente);
     }
 
@@ -50,12 +57,16 @@ public class ClienteService {
     public ClienteDTO actualizarCliente(Long id, ClienteDTO clienteDTO) {
         Cliente clienteExistente = clienteRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado"));
+
         clientePersonaMapper.clienteDTOToCliente(clienteDTO);
         clienteExistente.setContraseña(clienteDTO.getContraseña());
         clienteExistente.setEstado(clienteDTO.getEstado());
         clienteExistente.getPersona().setNombre(clienteDTO.getPersona().getNombre());
-        // Resto de los setters para persona
         clienteRepository.save(clienteExistente);
+
+        String mensaje = "Cliente actualizado con ID: " + clienteExistente.getId();
+        clientePublisher.publishClienteActualizado(mensaje);
+
         return clientePersonaMapper.clienteToClienteDTO(clienteExistente);
     }
 
@@ -63,6 +74,10 @@ public class ClienteService {
     public void eliminarCliente(Long id) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado"));
+
         clienteRepository.delete(cliente);
+
+        String mensaje = "Cliente eliminado con ID: " + cliente.getId();
+        clientePublisher.publishClienteEliminado(mensaje);
     }
 }
