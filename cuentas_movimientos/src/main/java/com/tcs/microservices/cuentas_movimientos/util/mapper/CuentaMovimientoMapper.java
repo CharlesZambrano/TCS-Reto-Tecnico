@@ -29,9 +29,9 @@ public interface CuentaMovimientoMapper {
         @Mapping(source = "cuenta.saldoInicial", target = "saldoInicial")
         @Mapping(source = "cuenta.tipo", target = "tipoCuenta")
         @Mapping(source = "movimiento.saldoDisponible", target = "saldoDisponible")
-        @Mapping(source = "movimiento.fecha", target = "fechaMovimiento")
+        @Mapping(source = "movimiento.fecha", target = "fecha")
         @Mapping(source = "movimiento.tipo", target = "tipoMovimiento")
         @Mapping(source = "movimiento.valor", target = "valorMovimiento")
-        @Mapping(target = "clienteNombre", ignore = true)
+        @Mapping(target = "cliente", ignore = true)
         ReporteMovimientoDTO toReporteMovimientoDTO(Cuenta cuenta, Movimiento movimiento);
 }

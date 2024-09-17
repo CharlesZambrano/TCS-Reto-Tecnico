@@ -11,12 +11,12 @@ import lombok.Setter;
 @Setter
 @Builder
 public class ReporteMovimientoDTO {
-    private String clienteNombre;
+    private LocalDateTime fecha;
+    private String cliente;
     private String numeroCuenta;
     private String tipoCuenta;
-    private BigDecimal saldoInicial;
-    private BigDecimal saldoDisponible;
-    private LocalDateTime fechaMovimiento;
     private String tipoMovimiento;
+    private BigDecimal saldoInicial;
     private BigDecimal valorMovimiento;
+    private BigDecimal saldoDisponible;
 }
