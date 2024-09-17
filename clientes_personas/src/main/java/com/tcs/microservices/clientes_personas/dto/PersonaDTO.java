@@ -17,7 +17,7 @@ public class PersonaDTO {
     @Size(max = 100, message = "El nombre no puede tener más de 100 caracteres")
     private String nombre;
 
-    @Size(max = 10, message = "El género no puede tener más de 10 caracteres")
+    @Size(max = 3, message = "El género no puede tener más de 3 caracteres")
     private String genero;
 
     private Integer edad;

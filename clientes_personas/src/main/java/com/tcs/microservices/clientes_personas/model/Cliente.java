@@ -42,7 +42,7 @@ public class Cliente implements Serializable {
     private Persona persona;
 
     @NotBlank(message = "La contraseña no puede estar vacía")
-    @Size(min = 8, max = 100)
+    @Size(min = 4, max = 10)
     @Column(name = "contraseña", nullable = false)
     private String contraseña;
 

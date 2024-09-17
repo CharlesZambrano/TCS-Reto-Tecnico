@@ -15,7 +15,7 @@ public class ClienteDTO {
     private Long id;
 
     @NotBlank(message = "La contraseña no puede estar vacía")
-    @Size(min = 8, max = 100, message = "La contraseña debe tener entre 8 y 100 caracteres")
+    @Size(min = 4, max = 10, message = "La contraseña debe tener entre 4 y 10 caracteres")
     private String contraseña;
 
     @NotNull(message = "El estado no puede estar vacío")

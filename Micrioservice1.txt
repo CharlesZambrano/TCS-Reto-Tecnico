@@ -1,7 +1,6 @@
 MICROSERVICIO 1:
 	
 	build.gradle:
-
 		plugins {
 			id 'java'
 			id 'org.springframework.boot' version '3.3.3'
@@ -62,7 +61,6 @@ MICROSERVICIO 1:
 		tasks.named('test') {
 			useJUnitPlatform()
 		}
-
 
 	application.properties:
 
@@ -146,7 +144,6 @@ MICROSERVICIO 1:
 
 		}
 
-
 	Models:
 
 		Cliente:
@@ -202,7 +199,6 @@ MICROSERVICIO 1:
 			    @Column(name = "estado", nullable = false)
 			    private Boolean estado;
 			}
-
 
 		Persona:
 
@@ -267,7 +263,6 @@ MICROSERVICIO 1:
 			    @Column(name = "telefono")
 			    private String telefono;
 			}
-
 
 	DTO:
 
@@ -367,7 +362,6 @@ MICROSERVICIO 1:
 			@Repository
 			public interface PersonaRepository extends JpaRepository<Persona, Long> {
 			}
-
 
 	Service:
 
@@ -577,7 +571,6 @@ MICROSERVICIO 1:
 			        return ResponseEntity.noContent().build();
 			    }
 			}
-
 
 	Config:
 
