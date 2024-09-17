@@ -1,8 +1,10 @@
 package com.tcs.microservices.cuentas_movimientos.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -50,16 +52,35 @@ public class ReporteService {
 
         return cuentas.stream()
                 .flatMap(cuenta -> {
-                    // Obtener movimientos por cuenta y fecha
+                    // Obtener movimientos ordenados por fecha ascendente
                     List<Movimiento> movimientos = movimientoRepository
-                            .findByCuenta_NumeroCuentaAndFechaBetween(cuenta.getNumeroCuenta(), inicio, fin);
-                    return movimientos.stream()
-                            .map(movimiento -> {
-                                ReporteMovimientoDTO reporte = cuentaMovimientoMapper.toReporteMovimientoDTO(cuenta,
-                                        movimiento);
-                                reporte.setClienteNombre(clienteNombre); // Asignar el nombre del cliente
-                                return reporte;
-                            });
+                            .findByCuenta_NumeroCuentaAndFechaBetweenOrderByFechaAsc(cuenta.getNumeroCuenta(), inicio,
+                                    fin);
+
+                    // Usar AtomicReference para manejar el saldo inicial y permitir que sea
+                    // modificable dentro del stream
+                    AtomicReference<BigDecimal> saldoInicialCuenta = new AtomicReference<>(cuenta.getSaldoInicial());
+
+                    return movimientos.stream().map(movimiento -> {
+                        // Crear reporte usando el saldo inicial actual
+                        ReporteMovimientoDTO reporte = cuentaMovimientoMapper.toReporteMovimientoDTO(cuenta,
+                                movimiento);
+
+                        // Asignar el saldo inicial correctamente: para el primer movimiento debe ser el
+                        // saldo inicial de la cuenta,
+                        // para los siguientes movimientos, el saldo inicial debe ser el saldo
+                        // disponible del movimiento anterior
+                        reporte.setSaldoInicial(saldoInicialCuenta.get());
+
+                        // Actualizar el saldo inicial para el siguiente movimiento (saldo disponible
+                        // del movimiento actual)
+                        saldoInicialCuenta.set(movimiento.getSaldoDisponible());
+
+                        // Asignar el nombre del cliente
+                        reporte.setClienteNombre(clienteNombre);
+
+                        return reporte;
+                    });
                 })
                 .collect(Collectors.toList());
     }
@@ -68,6 +89,7 @@ public class ReporteService {
         String url = clientesPersonasBaseUrl + "/clientes/" + clienteId;
         ClienteDTO clienteDTO = restTemplate.getForObject(url, ClienteDTO.class);
 
+        // Obtener el nombre de la persona asociada al cliente
         return clienteDTO != null && clienteDTO.getPersona() != null ? clienteDTO.getPersona().getNombre()
                 : "Cliente Desconocido";
     }

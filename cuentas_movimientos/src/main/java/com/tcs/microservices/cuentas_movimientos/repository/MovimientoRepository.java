@@ -10,6 +10,8 @@ import com.tcs.microservices.cuentas_movimientos.model.Movimiento;
 
 @Repository
 public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
-    List<Movimiento> findByCuenta_NumeroCuentaAndFechaBetween(String numeroCuenta, LocalDateTime fechaInicio,
+
+    List<Movimiento> findByCuenta_NumeroCuentaAndFechaBetweenOrderByFechaAsc(String numeroCuenta,
+            LocalDateTime fechaInicio,
             LocalDateTime fechaFin);
 }
