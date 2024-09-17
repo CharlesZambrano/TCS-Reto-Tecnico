@@ -3,9 +3,15 @@ package com.tcs.microservices.cuentas_movimientos.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
+import com.tcs.microservices.cuentas_movimientos.dto.ClienteDTO;
 import com.tcs.microservices.cuentas_movimientos.dto.CuentaDTO;
 import com.tcs.microservices.cuentas_movimientos.model.Cuenta;
 import com.tcs.microservices.cuentas_movimientos.repository.CuentaRepository;
@@ -20,12 +26,17 @@ public class CuentaService {
     private final CuentaRepository cuentaRepository;
     private final CuentaMovimientoMapper cuentaMovimientoMapper;
     private final UniqueIdGeneration uniqueIdGeneration;
+    private final RestTemplate restTemplate;
+
+    @Value("${clientes.personas.base.url}")
+    private String clientesPersonasBaseUrl;
 
     public CuentaService(CuentaRepository cuentaRepository, CuentaMovimientoMapper cuentaMovimientoMapper,
-            UniqueIdGeneration uniqueIdGeneration) {
+            UniqueIdGeneration uniqueIdGeneration, RestTemplate restTemplate) {
         this.cuentaRepository = cuentaRepository;
         this.cuentaMovimientoMapper = cuentaMovimientoMapper;
         this.uniqueIdGeneration = uniqueIdGeneration;
+        this.restTemplate = restTemplate;
     }
 
     @Transactional(readOnly = true)
@@ -45,10 +56,29 @@ public class CuentaService {
 
     @Transactional
     public CuentaDTO crearCuenta(CuentaDTO cuentaDTO) {
+        validarClienteExistente(cuentaDTO.getClienteId());
+
         Cuenta cuenta = cuentaMovimientoMapper.cuentaDTOToCuenta(cuentaDTO);
+
         cuenta.setUniqueId(uniqueIdGeneration.getUniqueId());
+
         cuenta = cuentaRepository.save(cuenta);
         return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta);
+    }
+
+    private void validarClienteExistente(Long clienteId) {
+        String url = clientesPersonasBaseUrl + "/clientes/" + clienteId;
+
+        try {
+            ResponseEntity<ClienteDTO> response = restTemplate.getForEntity(url, ClienteDTO.class);
+
+            if (response.getStatusCode() != HttpStatus.OK) {
+                throw new EntityNotFoundException("Cliente no encontrado con el ID: " + clienteId);
+            }
+
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new EntityNotFoundException("Cliente no encontrado con el ID: " + clienteId);
+        }
     }
 
     @Transactional
