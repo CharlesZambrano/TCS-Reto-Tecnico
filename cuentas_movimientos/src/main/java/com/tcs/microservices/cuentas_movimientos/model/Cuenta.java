@@ -35,7 +35,7 @@ public class Cuenta implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "cuenta_id")
-    private Long cuentaId;
+    private Long id;
 
     @NotBlank(message = "El identificador único no puede estar vacío")
     @Size(max = 16)

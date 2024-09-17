@@ -40,7 +40,7 @@ public class Movimiento implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "movimiento_id")
-    private Long movimientoId;
+    private Long id;
 
     @NotBlank(message = "El identificador único no puede estar vacío")
     @Size(max = 16)
