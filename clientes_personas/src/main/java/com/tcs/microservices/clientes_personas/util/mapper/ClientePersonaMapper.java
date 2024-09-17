@@ -8,9 +8,8 @@ import com.tcs.microservices.clientes_personas.dto.PersonaDTO;
 import com.tcs.microservices.clientes_personas.model.Cliente;
 import com.tcs.microservices.clientes_personas.model.Persona;
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface ClientePersonaMapper {
-
     ClientePersonaMapper INSTANCE = Mappers.getMapper(ClientePersonaMapper.class);
 
     ClienteDTO clienteToClienteDTO(Cliente cliente);

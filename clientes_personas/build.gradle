@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.tcs.microservices'
-version = '0.0.1-SNAPSHOT'
+version = 'V1'
 
 java {
 	toolchain {
@@ -35,13 +35,13 @@ dependencies {
 	// Hibernate Validator (Validación de Bean)
 	implementation 'org.hibernate.validator:hibernate-validator:8.0.0.Final'
 	
-	// MapStruct (incluye la dependencia principal y el procesador de anotaciones)
-	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
-	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+    // MapStruct (principal y procesador de anotaciones)
+    implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
 
-	// Lombok (para generar código como getters, setters, etc.)
-	compileOnly 'org.projectlombok:lombok' 
-	annotationProcessor 'org.projectlombok:lombok' 
+    // Lombok (para reducir el código boilerplate)
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
 
 	// Driver para PostgreSQL
 	runtimeOnly 'org.postgresql:postgresql'

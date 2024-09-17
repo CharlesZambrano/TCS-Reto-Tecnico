@@ -40,35 +40,35 @@ services:
       - microservices-network
     restart: always
 
-  # clientes_personas:
-  #   build: ./clientes_personas
-  #   ports:
-  #     - "8080:8080"
-  #   depends_on:
-  #     - postgres_clientes
-  #     - rabbitmq
-  #   environment:
-  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_clientes:5432/clientes_db
-  #     SPRING_DATASOURCE_USERNAME: admin
-  #     SPRING_DATASOURCE_PASSWORD: admin
-  #     SPRING_RABBITMQ_HOST: rabbitmq
-  #   networks:
-  #     - microservices-network
+  clientes_personas:
+    build: ./clientes_personas
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres_clientes
+      - rabbitmq
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_clientes:5432/clientes_db
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_RABBITMQ_HOST: rabbitmq
+    networks:
+      - microservices-network
 
-  # cuentas_movimientos:
-  #   build: ./cuentas_movimientos
-  #   ports:
-  #     - "8081:8081"
-  #   depends_on:
-  #     - postgres_cuentas
-  #     - rabbitmq
-  #   environment:
-  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_cuentas:5432/cuentas_db
-  #     SPRING_DATASOURCE_USERNAME: admin
-  #     SPRING_DATASOURCE_PASSWORD: admin
-  #     SPRING_RABBITMQ_HOST: rabbitmq
-  #   networks:
-  #     - microservices-network
+  cuentas_movimientos:
+    build: ./cuentas_movimientos
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres_cuentas
+      - rabbitmq
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_cuentas:5432/cuentas_db
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_RABBITMQ_HOST: rabbitmq
+    networks:
+      - microservices-network
 
 networks:
   microservices-network:
