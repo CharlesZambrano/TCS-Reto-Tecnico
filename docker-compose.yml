@@ -1,0 +1,75 @@
+version: "3"
+services:
+  postgres_clientes:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: clientes_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    container_name: postgres_clientes
+    volumes:
+      - ./db-init/clientes_personas.sql:/docker-entrypoint-initdb.d/BaseDatos.sql
+    networks:
+      - microservices-network
+    restart: always
+
+  postgres_cuentas:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: cuentas_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5433:5432"
+    container_name: postgres_cuentas
+    volumes:
+      - ./db-init/cuentas_movimientos.sql:/docker-entrypoint-initdb.d/BaseDatos.sql
+    networks:
+      - microservices-network
+    restart: always
+
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    container_name: rabbitmq
+    networks:
+      - microservices-network
+    restart: always
+
+  clientes_personas:
+    build: ./clientes_personas
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres_clientes
+      - rabbitmq
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_clientes:5432/clientes_db
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_RABBITMQ_HOST: rabbitmq
+    networks:
+      - microservices-network
+
+  cuentas_movimientos:
+    build: ./cuentas_movimientos
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres_cuentas
+      - rabbitmq
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_cuentas:5433/cuentas_db
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_RABBITMQ_HOST: rabbitmq
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge
