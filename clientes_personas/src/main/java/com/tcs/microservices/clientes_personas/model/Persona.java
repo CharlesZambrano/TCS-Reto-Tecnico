@@ -27,9 +27,11 @@ import lombok.ToString;
 @Table(name = "persona")
 public class Persona implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
+    @Column(name = "persona_id")
     private Long id;
 
     @NotBlank(message = "El nombre no puede estar vacío")
@@ -45,7 +47,7 @@ public class Persona implements Serializable {
 
     @NotBlank(message = "La identificación no puede estar vacía")
     @Size(max = 20)
-    @Column(name = "identificacion", length = 20, nullable = false)
+    @Column(name = "identificacion", length = 20, nullable = false, unique = true)
     private String identificacion;
 
     @Column(name = "direccion", length = 255)
