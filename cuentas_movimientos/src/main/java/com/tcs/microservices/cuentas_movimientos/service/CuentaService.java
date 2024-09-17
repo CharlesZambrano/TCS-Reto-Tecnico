@@ -91,7 +91,8 @@ public class CuentaService {
 
         try {
             ResponseEntity<ClienteDTO> response = restTemplate.getForEntity(url, ClienteDTO.class);
-            if (response.getStatusCode() != HttpStatus.OK) {
+            if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null
+                    || response.getBody().getPersona() == null) {
                 throw new ClienteNoEncontradoException("Cliente no encontrado con el ID: " + clienteId);
             }
         } catch (HttpClientErrorException.NotFound e) {
