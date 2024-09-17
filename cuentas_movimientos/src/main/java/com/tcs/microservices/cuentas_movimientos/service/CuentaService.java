@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.tcs.microservices.cuentas_movimientos.dto.ClienteDTO;
 import com.tcs.microservices.cuentas_movimientos.dto.CuentaDTO;
+import com.tcs.microservices.cuentas_movimientos.exception.ClienteNoEncontradoException;
 import com.tcs.microservices.cuentas_movimientos.model.Cuenta;
 import com.tcs.microservices.cuentas_movimientos.repository.CuentaRepository;
 import com.tcs.microservices.cuentas_movimientos.util.mapper.CuentaMovimientoMapper;
@@ -65,19 +66,6 @@ public class CuentaService {
         return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta);
     }
 
-    private void validarClienteExistente(Long clienteId) {
-        String url = clientesPersonasBaseUrl + "/clientes/" + clienteId;
-
-        try {
-            ResponseEntity<ClienteDTO> response = restTemplate.getForEntity(url, ClienteDTO.class);
-            if (response.getStatusCode() != HttpStatus.OK) {
-                throw new EntityNotFoundException("Cliente no encontrado con el ID: " + clienteId);
-            }
-        } catch (HttpClientErrorException.NotFound e) {
-            throw new EntityNotFoundException("Cliente no encontrado con el ID: " + clienteId);
-        }
-    }
-
     @Transactional
     public CuentaDTO actualizarCuenta(Long id, CuentaDTO cuentaDTO) {
         Cuenta cuentaExistente = cuentaRepository.findById(id)
@@ -96,5 +84,18 @@ public class CuentaService {
         Cuenta cuenta = cuentaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada"));
         cuentaRepository.delete(cuenta);
+    }
+
+    private void validarClienteExistente(Long clienteId) {
+        String url = clientesPersonasBaseUrl + "/clientes/" + clienteId;
+
+        try {
+            ResponseEntity<ClienteDTO> response = restTemplate.getForEntity(url, ClienteDTO.class);
+            if (response.getStatusCode() != HttpStatus.OK) {
+                throw new ClienteNoEncontradoException("Cliente no encontrado con el ID: " + clienteId);
+            }
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new ClienteNoEncontradoException("Cliente no encontrado con el ID: " + clienteId);
+        }
     }
 }

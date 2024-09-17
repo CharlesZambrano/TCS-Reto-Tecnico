@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.tcs.microservices.cuentas_movimientos.dto.CuentaDTO;
 import com.tcs.microservices.cuentas_movimientos.service.CuentaService;
 
-@CrossOrigin(origins = "*", allowedHeaders = "*", methods = { RequestMethod.GET, RequestMethod.POST,
-        RequestMethod.PUT, RequestMethod.DELETE })
+@CrossOrigin(origins = "*", allowedHeaders = "*", methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
+        RequestMethod.DELETE })
 @RestController
 @RequestMapping("/api/v1/cuentas")
 public class CuentaController {
