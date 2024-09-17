@@ -22,9 +22,10 @@ CREATE TABLE IF NOT EXISTS movimiento (
     movimiento_id SERIAL PRIMARY KEY,
     unique_id VARCHAR(16) NOT NULL,
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    tipo_movimiento VARCHAR(3) NOT NULL CHECK (tipo_movimiento IN ('RET', 'DEP')),
+    tipo VARCHAR(3) NOT NULL CHECK (tipo IN ('RET', 'DEP')),
     valor DECIMAL(17, 2) NOT NULL,
-    saldo DECIMAL(17, 2) NOT NULL,
+    saldo_inicial DECIMAL(17, 2) NOT NULL,
+    saldo_disponible DECIMAL(17, 2) NOT NULL,
     numero_cuenta VARCHAR(20) NOT NULL,
     CONSTRAINT fk_cuenta_numero FOREIGN KEY (numero_cuenta) REFERENCES cuenta(numero_cuenta),
     CONSTRAINT uq_mov_unique_id UNIQUE (unique_id)
@@ -34,9 +35,10 @@ COMMENT ON TABLE movimiento IS 'Tabla que almacena los movimientos bancarios rea
 COMMENT ON COLUMN movimiento.movimiento_id IS 'Clave primaria única e incremental para el movimiento';
 COMMENT ON COLUMN movimiento.unique_id IS 'Identificador único generado externamente para el movimiento';
 COMMENT ON COLUMN movimiento.fecha IS 'Fecha en la que se realizó el movimiento';
-COMMENT ON COLUMN movimiento.tipo_movimiento IS 'Tipo de movimiento: RET = Retiro, DEP = Depósito';
+COMMENT ON COLUMN movimiento.tipo IS 'Tipo de movimiento: RET = Retiro, DEP = Depósito';
 COMMENT ON COLUMN movimiento.valor IS 'Valor del movimiento realizado';
-COMMENT ON COLUMN movimiento.saldo IS 'Saldo en la cuenta después de realizar el movimiento';
+COMMENT ON COLUMN movimiento.saldo_inicial IS 'Saldo en la cuenta antes de realizar el movimiento';
+COMMENT ON COLUMN movimiento.saldo_disponible IS 'Saldo en la cuenta después de realizar el movimiento';
 COMMENT ON COLUMN movimiento.numero_cuenta IS 'Número de cuenta en el cual se realizó el movimiento';
 
 CREATE INDEX IF NOT EXISTS idx_cuenta_cliente_id ON cuenta (cliente_id);

@@ -317,15 +317,3 @@ Este plan se basa en principios SOLID y buenas prácticas para cada capa del pro
 
 Este plan ajustado ofrece una guía completa para implementar la solución del reto técnico, garantizando una 
 arquitectura sólida, escalable y fácil de mantener.
-
-
-Sobregiro en cuentas de ahoroo:
-	Lógica Adicional: Implementa validaciones para asegurarte de que ciertos tipos de movimientos sean consistentes con el tipo de cuenta. Por ejemplo, podrías restringir sobregiros en cuentas de ahorros o implementar límites en la cantidad de retiros permitidos para este tipo de cuentas.
-	Ejemplo: Si intentas realizar un retiro en una cuenta de ahorros y el saldo es insuficiente, puedes devolver un error o mensaje como "Saldo insuficiente, retiros no permitidos en cuentas de ahorros con saldo negativo".
-
-Sobregiro en cuentas corrientes:
-	Lógica Adicional: Una característica común de las cuentas corrientes es permitir sobregiros. Si la cuenta corriente tiene saldo insuficiente, puedes permitir el retiro, pero también reflejar que el saldo se ha vuelto negativo y quizás emitir una advertencia.
-	Ejemplo: Al realizar un retiro que deja un saldo negativo: "Saldo insuficiente, pero el sobregiro está permitido".
-
-
-

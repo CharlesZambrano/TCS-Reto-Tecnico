@@ -1,5 +1,6 @@
 package com.tcs.microservices.cuentas_movimientos.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tcs.microservices.cuentas_movimientos.dto.MovimientoDTO;
+import com.tcs.microservices.cuentas_movimientos.service.MovimientoPublisher;
 import com.tcs.microservices.cuentas_movimientos.service.MovimientoService;
 
 @CrossOrigin(origins = "*", allowedHeaders = "*", methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
@@ -26,9 +28,11 @@ import com.tcs.microservices.cuentas_movimientos.service.MovimientoService;
 public class MovimientoController {
 
     private final MovimientoService movimientoService;
+    private final MovimientoPublisher movimientoPublisher;
 
-    public MovimientoController(MovimientoService movimientoService) {
+    public MovimientoController(MovimientoService movimientoService, MovimientoPublisher movimientoPublisher) {
         this.movimientoService = movimientoService;
+        this.movimientoPublisher = movimientoPublisher;
     }
 
     @GetMapping
@@ -46,6 +50,15 @@ public class MovimientoController {
     @PostMapping
     public ResponseEntity<MovimientoDTO> crearMovimiento(@Validated @RequestBody MovimientoDTO movimientoDTO) {
         MovimientoDTO nuevoMovimiento = movimientoService.crearMovimiento(movimientoDTO);
+        // Publicar el mensaje a RabbitMQ si es un retiro grande o saldo bajo
+        if (nuevoMovimiento.getSaldoDisponible().compareTo(BigDecimal.valueOf(100)) < 0) {
+            movimientoPublisher.publishMovimiento("Saldo bajo: " + nuevoMovimiento.getSaldoDisponible());
+        }
+
+        if (movimientoDTO.getTipo().equals("RET") && movimientoDTO.getValor().compareTo(BigDecimal.valueOf(500)) > 0) {
+            movimientoPublisher.publishMovimiento("Retiro grande: " + movimientoDTO.getValor());
+        }
+
         return new ResponseEntity<>(nuevoMovimiento, HttpStatus.CREATED);
     }
 
@@ -61,4 +74,5 @@ public class MovimientoController {
         movimientoService.eliminarMovimiento(id);
         return ResponseEntity.noContent().build();
     }
+
 }

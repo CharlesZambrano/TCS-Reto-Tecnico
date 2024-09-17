@@ -120,9 +120,10 @@ MICROSERVICIO 2:
 		    movimiento_id SERIAL PRIMARY KEY,
 		    unique_id VARCHAR(16) NOT NULL,
 		    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		    tipo_movimiento VARCHAR(3) NOT NULL CHECK (tipo_movimiento IN ('RET', 'DEP')),
+		    tipo VARCHAR(3) NOT NULL CHECK (tipo_movimiento IN ('RET', 'DEP')),
 		    valor DECIMAL(17, 2) NOT NULL,
-		    saldo DECIMAL(17, 2) NOT NULL,
+		    saldo_inicial DECIMAL(17, 2) NOT NULL,
+		    saldo_disponible DECIMAL(17, 2) NOT NULL,
 		    numero_cuenta VARCHAR(20) NOT NULL,
 		    CONSTRAINT fk_cuenta_numero FOREIGN KEY (numero_cuenta) REFERENCES cuenta(numero_cuenta),
 		    CONSTRAINT uq_mov_unique_id UNIQUE (unique_id)
@@ -134,7 +135,8 @@ MICROSERVICIO 2:
 		COMMENT ON COLUMN movimiento.fecha IS 'Fecha en la que se realizó el movimiento';
 		COMMENT ON COLUMN movimiento.tipo_movimiento IS 'Tipo de movimiento: RET = Retiro, DEP = Depósito';
 		COMMENT ON COLUMN movimiento.valor IS 'Valor del movimiento realizado';
-		COMMENT ON COLUMN movimiento.saldo IS 'Saldo en la cuenta después de realizar el movimiento';
+		COMMENT ON COLUMN movimiento.saldo_inicial IS 'Saldo en la cuenta antes de realizar el movimiento';
+		COMMENT ON COLUMN movimiento.saldo_disponible IS 'Saldo en la cuenta después de realizar el movimiento';
 		COMMENT ON COLUMN movimiento.numero_cuenta IS 'Número de cuenta en el cual se realizó el movimiento';
 
 		CREATE INDEX IF NOT EXISTS idx_cuenta_cliente_id ON cuenta (cliente_id);
@@ -313,7 +315,6 @@ MICROSERVICIO 2:
 			    }
 			}
 
-
 	DTO:
 
 		ClienteDTO:
@@ -456,7 +457,7 @@ MICROSERVICIO 2:
 	Service:
 
 		CuentaService:
-		
+
 			package com.tcs.microservices.cuentas_movimientos.service;
 
 			import java.util.List;
@@ -964,3 +965,59 @@ MICROSERVICIO 2:
 		        @Mapping(source = "numeroCuenta", target = "cuenta.numeroCuenta")
 		        Movimiento movimientoDTOToMovimiento(MovimientoDTO movimientoDTO);
 		}
+
+
+	Exception:
+
+		GlobalExceptionHandler:
+
+			package com.tcs.microservices.cuentas_movimientos.exception;
+
+			import org.springframework.http.HttpStatus;
+			import org.springframework.http.ResponseEntity;
+			import org.springframework.web.bind.annotation.ControllerAdvice;
+			import org.springframework.web.bind.annotation.ExceptionHandler;
+			import org.springframework.web.context.request.WebRequest;
+
+			@ControllerAdvice
+			public class GlobalExceptionHandler {
+
+			    @ExceptionHandler(SaldoInsuficienteException.class)
+			    public ResponseEntity<?> handleSaldoInsuficienteException(SaldoInsuficienteException ex, WebRequest request) {
+			        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+			    }
+
+			    @ExceptionHandler(ClienteNoEncontradoException.class)
+			    public ResponseEntity<?> handleClienteNoEncontradoException(ClienteNoEncontradoException ex, WebRequest request) {
+			        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
+			    }
+
+			    @ExceptionHandler(Exception.class)
+			    public ResponseEntity<?> handleGlobalException(Exception ex, WebRequest request) {
+			        return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+			    }
+			}
+
+
+		ClienteNoEncontradoException:
+
+			package com.tcs.microservices.cuentas_movimientos.exception;
+
+			public class ClienteNoEncontradoException extends RuntimeException {
+			    public ClienteNoEncontradoException(String mensaje) {
+			        super(mensaje);
+			    }
+			}
+
+
+		SaldoInsuficienteException:
+
+			package com.tcs.microservices.cuentas_movimientos.exception;
+
+			public class SaldoInsuficienteException extends RuntimeException {
+			    public SaldoInsuficienteException(String mensaje) {
+			        super(mensaje);
+			    }
+			}
+
+

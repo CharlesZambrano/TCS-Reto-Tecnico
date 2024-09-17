@@ -54,27 +54,40 @@ public class MovimientoService {
         Cuenta cuenta = cuentaRepository.findByNumeroCuenta(movimientoDTO.getNumeroCuenta())
                 .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada"));
 
-        BigDecimal saldoActual = cuenta.getSaldoInicial();
-        BigDecimal valorMovimiento = movimientoDTO.getValor();
-
-        if (movimientoDTO.getTipoMovimiento().equals("RET") && saldoActual.compareTo(valorMovimiento) < 0) {
-            throw new SaldoInsuficienteException("Saldo no disponible para realizar el retiro");
-        }
+        BigDecimal nuevoSaldoDisponible = calcularNuevoSaldo(cuenta, movimientoDTO);
 
         Movimiento movimiento = cuentaMovimientoMapper.movimientoDTOToMovimiento(movimientoDTO);
         movimiento.setCuenta(cuenta);
         movimiento.setUniqueId(uniqueIdGeneration.getUniqueId());
+        movimiento.setSaldoInicial(cuenta.getSaldoInicial());
+        movimiento.setSaldoDisponible(nuevoSaldoDisponible);
 
-        if (movimientoDTO.getTipoMovimiento().equals("DEP")) {
-            cuenta.setSaldoInicial(saldoActual.add(valorMovimiento));
-        } else if (movimientoDTO.getTipoMovimiento().equals("RET")) {
-            cuenta.setSaldoInicial(saldoActual.subtract(valorMovimiento));
-        }
+        cuenta.setSaldoInicial(nuevoSaldoDisponible); // Actualizar saldo de la cuenta
+        cuentaRepository.save(cuenta); // Guardar la actualización del saldo
 
         movimiento = movimientoRepository.save(movimiento);
-        cuentaRepository.save(cuenta);
-
         return cuentaMovimientoMapper.movimientoToMovimientoDTO(movimiento);
+    }
+
+    private BigDecimal calcularNuevoSaldo(Cuenta cuenta, MovimientoDTO movimientoDTO) {
+        BigDecimal saldoActual = cuenta.getSaldoInicial();
+        BigDecimal valorMovimiento = movimientoDTO.getValor();
+
+        // Para retiros (RET)
+        if (movimientoDTO.getTipo().equals("RET")) {
+            if (cuenta.getTipoCuenta().equals("AHO") && saldoActual.compareTo(valorMovimiento) < 0) {
+                throw new SaldoInsuficienteException(
+                        "Saldo insuficiente, retiros no permitidos en cuentas de ahorro con saldo negativo.");
+            }
+            return saldoActual.subtract(valorMovimiento); // Actualizar saldo para retiros
+        }
+
+        // Para depósitos (DEP)
+        if (movimientoDTO.getTipo().equals("DEP")) {
+            return saldoActual.add(valorMovimiento); // Actualizar saldo para depósitos
+        }
+
+        throw new IllegalArgumentException("Tipo de movimiento no reconocido: " + movimientoDTO.getTipo());
     }
 
     @Transactional
@@ -82,9 +95,8 @@ public class MovimientoService {
         Movimiento movimientoExistente = movimientoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Movimiento no encontrado"));
 
-        movimientoExistente.setTipoMovimiento(movimientoDTO.getTipoMovimiento());
+        movimientoExistente.setTipo(movimientoDTO.getTipo());
         movimientoExistente.setValor(movimientoDTO.getValor());
-        movimientoExistente.setSaldo(movimientoDTO.getSaldo());
         movimientoExistente.getCuenta().setNumeroCuenta(movimientoDTO.getNumeroCuenta());
 
         movimientoRepository.save(movimientoExistente);

@@ -54,8 +54,8 @@ public class Movimiento implements Serializable {
 
     @NotBlank(message = "El tipo de movimiento no puede estar vacío")
     @Size(max = 3)
-    @Column(name = "tipo_movimiento", nullable = false)
-    private String tipoMovimiento;
+    @Column(name = "tipo", nullable = false)
+    private String tipo;
 
     @NotNull(message = "El valor del movimiento no puede estar vacío")
     @DecimalMin(value = "0.0", inclusive = false, message = "El valor del movimiento debe ser mayor que cero")
@@ -63,9 +63,12 @@ public class Movimiento implements Serializable {
     private BigDecimal valor;
 
     @NotNull(message = "El saldo no puede estar vacío")
-    @DecimalMin(value = "0.0", inclusive = true, message = "El saldo debe ser positivo")
-    @Column(name = "saldo", precision = 17, scale = 2, nullable = false)
-    private BigDecimal saldo;
+    @Column(name = "saldo_inicial", precision = 17, scale = 2, nullable = false)
+    private BigDecimal saldoInicial;
+
+    @NotNull(message = "El saldo disponible no puede estar vacío")
+    @Column(name = "saldo_disponible", precision = 17, scale = 2, nullable = false)
+    private BigDecimal saldoDisponible;
 
     @ManyToOne
     @JoinColumn(name = "numero_cuenta", referencedColumnName = "numero_cuenta", nullable = false)
