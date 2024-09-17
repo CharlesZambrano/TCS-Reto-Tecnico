@@ -96,49 +96,54 @@ MICROSERVICIO 2:
 
 	Script base de datos:
 
+		-- Tabla 'cuenta'
 		CREATE TABLE IF NOT EXISTS cuenta (
 		    cuenta_id SERIAL PRIMARY KEY,
 		    unique_id VARCHAR(16) NOT NULL,
 		    numero_cuenta VARCHAR(20) UNIQUE NOT NULL,
-		    tipo_cuenta VARCHAR(3) NOT NULL CHECK (tipo_cuenta IN ('COR', 'AHO')),
+		    tipo VARCHAR(3) NOT NULL CHECK (tipo IN ('COR', 'AHO')),
 		    saldo_inicial DECIMAL(17, 2) NOT NULL,
 		    estado BOOLEAN NOT NULL,
 		    cliente_id INT NOT NULL,
-		    CONSTRAINT uq_unique_id UNIQUE (unique_id)
+		    CONSTRAINT uq_unique_id UNIQUE (unique_id),
+		    CONSTRAINT chk_saldo_negativo CHECK ((tipo = 'COR') OR (saldo_inicial >= 0))
 		);
 
 		COMMENT ON TABLE cuenta IS 'Tabla que almacena información sobre las cuentas bancarias de los clientes, incluyendo tipo de cuenta y saldo inicial';
 		COMMENT ON COLUMN cuenta.cuenta_id IS 'Clave primaria única e incremental para la cuenta';
 		COMMENT ON COLUMN cuenta.unique_id IS 'Identificador único generado externamente para la cuenta';
 		COMMENT ON COLUMN cuenta.numero_cuenta IS 'Número de cuenta bancario único';
-		COMMENT ON COLUMN cuenta.tipo_cuenta IS 'Tipo de cuenta: COR = Corriente, AHO = Ahorro';
-		COMMENT ON COLUMN cuenta.saldo_inicial IS 'Saldo inicial de la cuenta';
+		COMMENT ON COLUMN cuenta.tipo IS 'Tipo de cuenta: COR = Corriente, AHO = Ahorro';
+		COMMENT ON COLUMN cuenta.saldo_inicial IS 'Saldo inicial de la cuenta. Puede ser negativo solo en cuentas corrientes.';
 		COMMENT ON COLUMN cuenta.estado IS 'Estado de la cuenta: activa o inactiva';
 		COMMENT ON COLUMN cuenta.cliente_id IS 'Relación con el cliente asociado a esta cuenta';
 
+		-- Tabla 'movimiento'
 		CREATE TABLE IF NOT EXISTS movimiento (
 		    movimiento_id SERIAL PRIMARY KEY,
 		    unique_id VARCHAR(16) NOT NULL,
 		    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		    tipo VARCHAR(3) NOT NULL CHECK (tipo_movimiento IN ('RET', 'DEP')),
+		    tipo VARCHAR(3) NOT NULL CHECK (tipo IN ('RET', 'DEP')),
 		    valor DECIMAL(17, 2) NOT NULL,
 		    saldo_inicial DECIMAL(17, 2) NOT NULL,
 		    saldo_disponible DECIMAL(17, 2) NOT NULL,
 		    numero_cuenta VARCHAR(20) NOT NULL,
 		    CONSTRAINT fk_cuenta_numero FOREIGN KEY (numero_cuenta) REFERENCES cuenta(numero_cuenta),
-		    CONSTRAINT uq_mov_unique_id UNIQUE (unique_id)
+		    CONSTRAINT uq_mov_unique_id UNIQUE (unique_id),
+		    CONSTRAINT chk_saldo_disponible_negativo CHECK (saldo_disponible >= 0)
 		);
 
 		COMMENT ON TABLE movimiento IS 'Tabla que almacena los movimientos bancarios realizados en las cuentas, incluyendo retiros y depósitos';
 		COMMENT ON COLUMN movimiento.movimiento_id IS 'Clave primaria única e incremental para el movimiento';
 		COMMENT ON COLUMN movimiento.unique_id IS 'Identificador único generado externamente para el movimiento';
 		COMMENT ON COLUMN movimiento.fecha IS 'Fecha en la que se realizó el movimiento';
-		COMMENT ON COLUMN movimiento.tipo_movimiento IS 'Tipo de movimiento: RET = Retiro, DEP = Depósito';
+		COMMENT ON COLUMN movimiento.tipo IS 'Tipo de movimiento: RET = Retiro, DEP = Depósito';
 		COMMENT ON COLUMN movimiento.valor IS 'Valor del movimiento realizado';
 		COMMENT ON COLUMN movimiento.saldo_inicial IS 'Saldo en la cuenta antes de realizar el movimiento';
-		COMMENT ON COLUMN movimiento.saldo_disponible IS 'Saldo en la cuenta después de realizar el movimiento';
+		COMMENT ON COLUMN movimiento.saldo_disponible IS 'Saldo en la cuenta después de realizar el movimiento.';
 		COMMENT ON COLUMN movimiento.numero_cuenta IS 'Número de cuenta en el cual se realizó el movimiento';
 
+		-- Índices para mejorar las consultas
 		CREATE INDEX IF NOT EXISTS idx_cuenta_cliente_id ON cuenta (cliente_id);
 		CREATE INDEX IF NOT EXISTS idx_movimiento_fecha ON movimiento (fecha);
 		CREATE INDEX IF NOT EXISTS idx_movimiento_cuenta ON movimiento (numero_cuenta);
@@ -176,7 +181,6 @@ MICROSERVICIO 2:
 			import jakarta.persistence.GenerationType;
 			import jakarta.persistence.Id;
 			import jakarta.persistence.Table;
-			import jakarta.validation.constraints.DecimalMin;
 			import jakarta.validation.constraints.NotBlank;
 			import jakarta.validation.constraints.NotNull;
 			import jakarta.validation.constraints.Size;
@@ -216,11 +220,10 @@ MICROSERVICIO 2:
 
 			    @NotBlank(message = "El tipo de cuenta no puede estar vacío")
 			    @Size(max = 3)
-			    @Column(name = "tipo_cuenta", nullable = false)
-			    private String tipoCuenta;
+			    @Column(name = "tipo", nullable = false)
+			    private String tipo;
 
 			    @NotNull(message = "El saldo inicial no puede estar vacío")
-			    @DecimalMin(value = "0.0", inclusive = true, message = "El saldo inicial debe ser positivo")
 			    @Column(name = "saldo_inicial", precision = 17, scale = 2, nullable = false)
 			    private BigDecimal saldoInicial;
 
@@ -232,7 +235,6 @@ MICROSERVICIO 2:
 			    @Column(name = "cliente_id", nullable = false)
 			    private Long clienteId;
 			}
-
 
 		Movimiento:
 
@@ -251,9 +253,6 @@ MICROSERVICIO 2:
 			import jakarta.persistence.ManyToOne;
 			import jakarta.persistence.PrePersist;
 			import jakarta.persistence.Table;
-			import jakarta.persistence.Temporal;
-			import jakarta.persistence.TemporalType;
-			import jakarta.validation.constraints.DecimalMin;
 			import jakarta.validation.constraints.NotBlank;
 			import jakarta.validation.constraints.NotNull;
 			import jakarta.validation.constraints.Size;
@@ -286,24 +285,25 @@ MICROSERVICIO 2:
 			    @Column(name = "unique_id", unique = true, nullable = false)
 			    private String uniqueId;
 
-			    @Temporal(TemporalType.TIMESTAMP)
 			    @Column(name = "fecha", nullable = false, updatable = false)
 			    private LocalDateTime fecha;
 
 			    @NotBlank(message = "El tipo de movimiento no puede estar vacío")
 			    @Size(max = 3)
-			    @Column(name = "tipo_movimiento", nullable = false)
-			    private String tipoMovimiento;
+			    @Column(name = "tipo", nullable = false)
+			    private String tipo;
 
 			    @NotNull(message = "El valor del movimiento no puede estar vacío")
-			    @DecimalMin(value = "0.0", inclusive = false, message = "El valor del movimiento debe ser mayor que cero")
 			    @Column(name = "valor", precision = 17, scale = 2, nullable = false)
 			    private BigDecimal valor;
 
-			    @NotNull(message = "El saldo no puede estar vacío")
-			    @DecimalMin(value = "0.0", inclusive = true, message = "El saldo debe ser positivo")
-			    @Column(name = "saldo", precision = 17, scale = 2, nullable = false)
-			    private BigDecimal saldo;
+			    @NotNull(message = "El saldo inicial no puede estar vacío")
+			    @Column(name = "saldo_inicial", precision = 17, scale = 2, nullable = false)
+			    private BigDecimal saldoInicial;
+
+			    @NotNull(message = "El saldo disponible no puede estar vacío")
+			    @Column(name = "saldo_disponible", precision = 17, scale = 2, nullable = false)
+			    private BigDecimal saldoDisponible;
 
 			    @ManyToOne
 			    @JoinColumn(name = "numero_cuenta", referencedColumnName = "numero_cuenta", nullable = false)
@@ -343,7 +343,6 @@ MICROSERVICIO 2:
 
 			import java.math.BigDecimal;
 
-			import jakarta.validation.constraints.DecimalMin;
 			import jakarta.validation.constraints.NotBlank;
 			import jakarta.validation.constraints.NotNull;
 			import jakarta.validation.constraints.Size;
@@ -365,11 +364,10 @@ MICROSERVICIO 2:
 			    private String numeroCuenta;
 
 			    @NotBlank(message = "El tipo de cuenta no puede estar vacío")
-			    @Size(max = 20, message = "El tipo de cuenta no puede tener más de 20 caracteres")
-			    private String tipoCuenta;
+			    @Size(max = 3, message = "El tipo de cuenta no puede tener más de 3 caracteres")
+			    private String tipo;
 
 			    @NotNull(message = "El saldo inicial no puede estar vacío")
-			    @DecimalMin(value = "0.0", inclusive = true, message = "El saldo inicial debe ser positivo")
 			    private BigDecimal saldoInicial;
 
 			    @NotNull(message = "El estado no puede estar vacío")
@@ -400,25 +398,22 @@ MICROSERVICIO 2:
 			public class MovimientoDTO {
 
 			    private Long id;
-
 			    private String uniqueId;
-
 			    private LocalDateTime fecha;
 
 			    @NotBlank(message = "El tipo de movimiento no puede estar vacío")
-			    @Size(max = 20, message = "El tipo de movimiento no puede tener más de 20 caracteres")
-			    private String tipoMovimiento;
+			    @Size(max = 3, message = "El tipo de movimiento no puede tener más de 3 caracteres")
+			    private String tipo;
 
 			    @NotNull(message = "El valor del movimiento no puede estar vacío")
 			    @DecimalMin(value = "0.0", inclusive = false, message = "El valor del movimiento debe ser mayor que cero")
 			    private BigDecimal valor;
 
-			    @NotNull(message = "El saldo no puede estar vacío")
-			    @DecimalMin(value = "0.0", inclusive = true, message = "El saldo debe ser positivo")
-			    private BigDecimal saldo;
-
 			    @NotBlank(message = "El número de cuenta no puede estar vacío")
 			    private String numeroCuenta;
+
+			    private BigDecimal saldoInicial;
+			    private BigDecimal saldoDisponible;
 			}
 
 	Repository:
@@ -473,6 +468,7 @@ MICROSERVICIO 2:
 
 			import com.tcs.microservices.cuentas_movimientos.dto.ClienteDTO;
 			import com.tcs.microservices.cuentas_movimientos.dto.CuentaDTO;
+			import com.tcs.microservices.cuentas_movimientos.exception.ClienteNoEncontradoException;
 			import com.tcs.microservices.cuentas_movimientos.model.Cuenta;
 			import com.tcs.microservices.cuentas_movimientos.repository.CuentaRepository;
 			import com.tcs.microservices.cuentas_movimientos.util.mapper.CuentaMovimientoMapper;
@@ -525,19 +521,6 @@ MICROSERVICIO 2:
 			        return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta);
 			    }
 
-			    private void validarClienteExistente(Long clienteId) {
-			        String url = clientesPersonasBaseUrl + "/clientes/" + clienteId;
-
-			        try {
-			            ResponseEntity<ClienteDTO> response = restTemplate.getForEntity(url, ClienteDTO.class);
-			            if (response.getStatusCode() != HttpStatus.OK) {
-			                throw new EntityNotFoundException("Cliente no encontrado con el ID: " + clienteId);
-			            }
-			        } catch (HttpClientErrorException.NotFound e) {
-			            throw new EntityNotFoundException("Cliente no encontrado con el ID: " + clienteId);
-			        }
-			    }
-
 			    @Transactional
 			    public CuentaDTO actualizarCuenta(Long id, CuentaDTO cuentaDTO) {
 			        Cuenta cuentaExistente = cuentaRepository.findById(id)
@@ -556,6 +539,19 @@ MICROSERVICIO 2:
 			        Cuenta cuenta = cuentaRepository.findById(id)
 			                .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada"));
 			        cuentaRepository.delete(cuenta);
+			    }
+
+			    private void validarClienteExistente(Long clienteId) {
+			        String url = clientesPersonasBaseUrl + "/clientes/" + clienteId;
+
+			        try {
+			            ResponseEntity<ClienteDTO> response = restTemplate.getForEntity(url, ClienteDTO.class);
+			            if (response.getStatusCode() != HttpStatus.OK) {
+			                throw new ClienteNoEncontradoException("Cliente no encontrado con el ID: " + clienteId);
+			            }
+			        } catch (HttpClientErrorException.NotFound e) {
+			            throw new ClienteNoEncontradoException("Cliente no encontrado con el ID: " + clienteId);
+			        }
 			    }
 			}
 
@@ -584,6 +580,7 @@ MICROSERVICIO 2:
 
 			package com.tcs.microservices.cuentas_movimientos.service;
 
+			import java.math.BigDecimal;
 			import java.util.List;
 			import java.util.stream.Collectors;
 
@@ -591,6 +588,7 @@ MICROSERVICIO 2:
 			import org.springframework.transaction.annotation.Transactional;
 
 			import com.tcs.microservices.cuentas_movimientos.dto.MovimientoDTO;
+			import com.tcs.microservices.cuentas_movimientos.exception.SaldoInsuficienteException;
 			import com.tcs.microservices.cuentas_movimientos.model.Cuenta;
 			import com.tcs.microservices.cuentas_movimientos.model.Movimiento;
 			import com.tcs.microservices.cuentas_movimientos.repository.CuentaRepository;
@@ -609,8 +607,7 @@ MICROSERVICIO 2:
 			    private final UniqueIdGeneration uniqueIdGeneration;
 
 			    public MovimientoService(MovimientoRepository movimientoRepository, CuentaRepository cuentaRepository,
-			            CuentaMovimientoMapper cuentaMovimientoMapper,
-			            UniqueIdGeneration uniqueIdGeneration) {
+			            CuentaMovimientoMapper cuentaMovimientoMapper, UniqueIdGeneration uniqueIdGeneration) {
 			        this.movimientoRepository = movimientoRepository;
 			        this.cuentaRepository = cuentaRepository;
 			        this.cuentaMovimientoMapper = cuentaMovimientoMapper;
@@ -637,11 +634,48 @@ MICROSERVICIO 2:
 			        Cuenta cuenta = cuentaRepository.findByNumeroCuenta(movimientoDTO.getNumeroCuenta())
 			                .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada"));
 
+			        BigDecimal nuevoSaldoDisponible = calcularNuevoSaldo(cuenta, movimientoDTO);
+
 			        Movimiento movimiento = cuentaMovimientoMapper.movimientoDTOToMovimiento(movimientoDTO);
 			        movimiento.setCuenta(cuenta);
 			        movimiento.setUniqueId(uniqueIdGeneration.getUniqueId());
+			        movimiento.setSaldoInicial(cuenta.getSaldoInicial());
+			        movimiento.setSaldoDisponible(nuevoSaldoDisponible);
+
+			        cuenta.setSaldoInicial(nuevoSaldoDisponible); // Actualizar saldo de la cuenta
+			        cuentaRepository.save(cuenta); // Guardar la actualización del saldo
+
 			        movimiento = movimientoRepository.save(movimiento);
 			        return cuentaMovimientoMapper.movimientoToMovimientoDTO(movimiento);
+			    }
+
+			    private BigDecimal calcularNuevoSaldo(Cuenta cuenta, MovimientoDTO movimientoDTO) {
+			        BigDecimal saldoActual = cuenta.getSaldoInicial();
+			        BigDecimal valorMovimiento = movimientoDTO.getValor();
+
+			        if (movimientoDTO.getTipo().equals("RET")) {
+			            // Lógica para cuentas de ahorro (AHO)
+			            if (cuenta.getTipo().equals("AHO")) {
+			                if (saldoActual.compareTo(valorMovimiento) < 0) {
+			                    throw new SaldoInsuficienteException(
+			                            "Saldo insuficiente, retiros no permitidos en cuentas de ahorro con saldo negativo.");
+			                }
+			                return saldoActual.subtract(valorMovimiento);
+			            }
+
+			            // Lógica para cuentas corrientes (COR)
+			            if (cuenta.getTipo().equals("COR")) {
+			                // Permitimos que el saldo sea negativo
+			                return saldoActual.subtract(valorMovimiento);
+			            }
+			        }
+
+			        // Lógica para depósitos (DEP)
+			        if (movimientoDTO.getTipo().equals("DEP")) {
+			            return saldoActual.add(valorMovimiento);
+			        }
+
+			        throw new IllegalArgumentException("Tipo de movimiento no reconocido: " + movimientoDTO.getTipo());
 			    }
 
 			    @Transactional
@@ -649,9 +683,8 @@ MICROSERVICIO 2:
 			        Movimiento movimientoExistente = movimientoRepository.findById(id)
 			                .orElseThrow(() -> new EntityNotFoundException("Movimiento no encontrado"));
 
-			        movimientoExistente.setTipoMovimiento(movimientoDTO.getTipoMovimiento());
+			        movimientoExistente.setTipo(movimientoDTO.getTipo());
 			        movimientoExistente.setValor(movimientoDTO.getValor());
-			        movimientoExistente.setSaldo(movimientoDTO.getSaldo());
 			        movimientoExistente.getCuenta().setNumeroCuenta(movimientoDTO.getNumeroCuenta());
 
 			        movimientoRepository.save(movimientoExistente);

@@ -13,9 +13,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -48,7 +45,6 @@ public class Movimiento implements Serializable {
     @Column(name = "unique_id", unique = true, nullable = false)
     private String uniqueId;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "fecha", nullable = false, updatable = false)
     private LocalDateTime fecha;
 
@@ -58,11 +54,10 @@ public class Movimiento implements Serializable {
     private String tipo;
 
     @NotNull(message = "El valor del movimiento no puede estar vacío")
-    @DecimalMin(value = "0.0", inclusive = false, message = "El valor del movimiento debe ser mayor que cero")
     @Column(name = "valor", precision = 17, scale = 2, nullable = false)
     private BigDecimal valor;
 
-    @NotNull(message = "El saldo no puede estar vacío")
+    @NotNull(message = "El saldo inicial no puede estar vacío")
     @Column(name = "saldo_inicial", precision = 17, scale = 2, nullable = false)
     private BigDecimal saldoInicial;
 

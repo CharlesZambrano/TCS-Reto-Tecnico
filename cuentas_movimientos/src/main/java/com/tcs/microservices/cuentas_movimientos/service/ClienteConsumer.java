@@ -11,7 +11,5 @@ public class ClienteConsumer {
     @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
     public void recibirClienteEvento(String mensaje) {
         System.out.println("Evento recibido: " + mensaje);
-        // Aquí puedes procesar el mensaje, por ejemplo, crear, actualizar o eliminar
-        // cuentas
     }
 }

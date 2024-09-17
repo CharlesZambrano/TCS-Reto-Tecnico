@@ -62,8 +62,8 @@ public class MovimientoService {
         movimiento.setSaldoInicial(cuenta.getSaldoInicial());
         movimiento.setSaldoDisponible(nuevoSaldoDisponible);
 
-        cuenta.setSaldoInicial(nuevoSaldoDisponible); // Actualizar saldo de la cuenta
-        cuentaRepository.save(cuenta); // Guardar la actualización del saldo
+        cuenta.setSaldoInicial(nuevoSaldoDisponible);
+        cuentaRepository.save(cuenta);
 
         movimiento = movimientoRepository.save(movimiento);
         return cuentaMovimientoMapper.movimientoToMovimientoDTO(movimiento);
@@ -73,18 +73,22 @@ public class MovimientoService {
         BigDecimal saldoActual = cuenta.getSaldoInicial();
         BigDecimal valorMovimiento = movimientoDTO.getValor();
 
-        // Para retiros (RET)
         if (movimientoDTO.getTipo().equals("RET")) {
-            if (cuenta.getTipoCuenta().equals("AHO") && saldoActual.compareTo(valorMovimiento) < 0) {
-                throw new SaldoInsuficienteException(
-                        "Saldo insuficiente, retiros no permitidos en cuentas de ahorro con saldo negativo.");
+            if (cuenta.getTipo().equals("AHO")) {
+                if (saldoActual.compareTo(valorMovimiento) < 0) {
+                    throw new SaldoInsuficienteException(
+                            "Saldo insuficiente, retiros no permitidos en cuentas de ahorro con saldo negativo.");
+                }
+                return saldoActual.subtract(valorMovimiento);
             }
-            return saldoActual.subtract(valorMovimiento); // Actualizar saldo para retiros
+
+            if (cuenta.getTipo().equals("COR")) {
+                return saldoActual.subtract(valorMovimiento);
+            }
         }
 
-        // Para depósitos (DEP)
         if (movimientoDTO.getTipo().equals("DEP")) {
-            return saldoActual.add(valorMovimiento); // Actualizar saldo para depósitos
+            return saldoActual.add(valorMovimiento);
         }
 
         throw new IllegalArgumentException("Tipo de movimiento no reconocido: " + movimientoDTO.getTipo());

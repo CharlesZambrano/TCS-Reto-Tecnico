@@ -50,7 +50,6 @@ public class MovimientoController {
     @PostMapping
     public ResponseEntity<MovimientoDTO> crearMovimiento(@Validated @RequestBody MovimientoDTO movimientoDTO) {
         MovimientoDTO nuevoMovimiento = movimientoService.crearMovimiento(movimientoDTO);
-        // Publicar el mensaje a RabbitMQ si es un retiro grande o saldo bajo
         if (nuevoMovimiento.getSaldoDisponible().compareTo(BigDecimal.valueOf(100)) < 0) {
             movimientoPublisher.publishMovimiento("Saldo bajo: " + nuevoMovimiento.getSaldoDisponible());
         }

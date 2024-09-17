@@ -31,5 +31,6 @@ public class MovimientoDTO {
     @NotBlank(message = "El número de cuenta no puede estar vacío")
     private String numeroCuenta;
 
+    private BigDecimal saldoInicial;
     private BigDecimal saldoDisponible;
 }
