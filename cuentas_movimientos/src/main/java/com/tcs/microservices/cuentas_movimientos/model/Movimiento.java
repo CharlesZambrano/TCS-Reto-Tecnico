@@ -53,7 +53,7 @@ public class Movimiento implements Serializable {
     private LocalDateTime fecha;
 
     @NotBlank(message = "El tipo de movimiento no puede estar vacío")
-    @Size(max = 20)
+    @Size(max = 3)
     @Column(name = "tipo_movimiento", nullable = false)
     private String tipoMovimiento;
 

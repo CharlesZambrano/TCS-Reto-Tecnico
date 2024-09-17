@@ -39,7 +39,7 @@ public class Persona implements Serializable {
     @Column(name = "nombre", nullable = false)
     private String nombre;
 
-    @Size(max = 10)
+    @Size(max = 3)
     @Column(name = "genero")
     private String genero;
 

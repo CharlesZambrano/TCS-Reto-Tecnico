@@ -48,7 +48,7 @@ public class Cuenta implements Serializable {
     private String numeroCuenta;
 
     @NotBlank(message = "El tipo de cuenta no puede estar vacío")
-    @Size(max = 20)
+    @Size(max = 3)
     @Column(name = "tipo_cuenta", nullable = false)
     private String tipoCuenta;
 
