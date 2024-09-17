@@ -76,14 +76,14 @@ Este plan está diseñado para cumplir con los requisitos del reto técnico, apl
 
 ### **4. Comunicación Asincrónica con RabbitMQ**
 
-#### 4.1. Configuración de RabbitMQ en Docker Compose
-El archivo `docker-compose.yml` debe contener la configuración de RabbitMQ como broker de mensajes, lo que permitirá la comunicación asincrónica entre los microservicios.
+	#### 4.1. Configuración de RabbitMQ en Docker Compose
+	El archivo `docker-compose.yml` debe contener la configuración de RabbitMQ como broker de mensajes, lo que permitirá la comunicación asincrónica entre los microservicios.
 
-#### 4.2. Publicar y Consumir Mensajes
-- **Microservicio `cuentas_movimientos`:** Publicará mensajes relacionados con los movimientos realizados en las cuentas.
-- **Microservicio `clientes_personas`:** Consumirá estos mensajes para registrar o actualizar la información de los clientes y movimientos asociados.
+	#### 4.2. Publicar y Consumir Mensajes
+	- **Microservicio `cuentas_movimientos`:** Publicará mensajes relacionados con los movimientos realizados en las cuentas.
+	- **Microservicio `clientes_personas`:** Consumirá estos mensajes para registrar o actualizar la información de los clientes y movimientos asociados.
 
-Ambos microservicios deben tener configuraciones para enviar y recibir mensajes de las colas de RabbitMQ.
+	Ambos microservicios deben tener configuraciones para enviar y recibir mensajes de las colas de RabbitMQ.
 
 ---
 
