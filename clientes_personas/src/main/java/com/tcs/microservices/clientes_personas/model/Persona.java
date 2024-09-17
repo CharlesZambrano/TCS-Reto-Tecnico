@@ -36,10 +36,11 @@ public class Persona implements Serializable {
 
     @NotBlank(message = "El nombre no puede estar vacío")
     @Size(max = 100)
-    @Column(name = "nombre", length = 100, nullable = false)
+    @Column(name = "nombre", nullable = false)
     private String nombre;
 
-    @Column(name = "genero", length = 10)
+    @Size(max = 10)
+    @Column(name = "genero")
     private String genero;
 
     @Column(name = "edad")
@@ -47,12 +48,14 @@ public class Persona implements Serializable {
 
     @NotBlank(message = "La identificación no puede estar vacía")
     @Size(max = 20)
-    @Column(name = "identificacion", length = 20, nullable = false, unique = true)
+    @Column(name = "identificacion", nullable = false, unique = true)
     private String identificacion;
 
-    @Column(name = "direccion", length = 255)
+    @Size(max = 255)
+    @Column(name = "direccion")
     private String direccion;
 
-    @Column(name = "telefono", length = 15)
+    @Size(max = 15)
+    @Column(name = "telefono")
     private String telefono;
 }
