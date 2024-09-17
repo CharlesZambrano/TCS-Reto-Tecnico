@@ -6,71 +6,71 @@ Este plan está diseñado para cumplir con los requisitos del reto técnico, apl
 
 ### **1. Configuración Inicial del Proyecto**
 
-#### 1.1. Crear los Microservicios con Spring Initializr
-Genera **dos microservicios** utilizando Spring Initializr:
+	#### 1.1. Crear los Microservicios con Spring Initializr
+	Genera **dos microservicios** utilizando Spring Initializr:
 
-- **Microservicio 1:** `clientes_personas`
-  - **Group ID:** `com.tcs.microservices`
-  - **Artifact ID:** `clientes_personas`
-  - **Versión de Spring Boot:** 3.3.3
-  - **Dependencias:**
-    - Spring Web (para manejar solicitudes HTTP)
-    - Spring Data JPA (para interactuar con PostgreSQL)
-    - Lombok (para reducir código repetitivo en Java)
-    - PostgreSQL Driver (para conectarse a la base de datos)
-    - Spring Boot Actuator (para monitoreo y métricas)
-    - Spring for RabbitMQ (para comunicación asincrónica)
-    - DevTools (opcional para recarga automática durante el desarrollo)
-    - Swagger/OpenAPI (para la documentación de APIs)
+	- **Microservicio 1:** `clientes_personas`
+	  - **Group ID:** `com.tcs.microservices`
+	  - **Artifact ID:** `clientes_personas`
+	  - **Versión de Spring Boot:** 3.3.3
+	  - **Dependencias:**
+	    - Spring Web (para manejar solicitudes HTTP)
+	    - Spring Data JPA (para interactuar con PostgreSQL)
+	    - Lombok (para reducir código repetitivo en Java)
+	    - PostgreSQL Driver (para conectarse a la base de datos)
+	    - Spring Boot Actuator (para monitoreo y métricas)
+	    - Spring for RabbitMQ (para comunicación asincrónica)
+	    - DevTools (opcional para recarga automática durante el desarrollo)
+	    - Swagger/OpenAPI (para la documentación de APIs)
 
-- **Microservicio 2:** `cuentas_movimientos`
-  - **Group ID:** `com.tcs.microservices`
-  - **Artifact ID:** `cuentas_movimientos`
-  - **Versión de Spring Boot:** 3.3.3
-  - **Dependencias:**
-    - Spring Web
-    - Spring Data JPA
-    - Lombok
-    - PostgreSQL Driver
-    - Spring Boot Actuator
-    - Spring for RabbitMQ
-    - DevTools
-    - Swagger/OpenAPI
+	- **Microservicio 2:** `cuentas_movimientos`
+	  - **Group ID:** `com.tcs.microservices`
+	  - **Artifact ID:** `cuentas_movimientos`
+	  - **Versión de Spring Boot:** 3.3.3
+	  - **Dependencias:**
+	    - Spring Web
+	    - Spring Data JPA
+	    - Lombok
+	    - PostgreSQL Driver
+	    - Spring Boot Actuator
+	    - Spring for RabbitMQ
+	    - DevTools
+	    - Swagger/OpenAPI
 
-#### 1.2. Configuración en Visual Studio Code
-Configura tu entorno de desarrollo en Visual Studio Code con las siguientes extensiones:
-- **Extension Pack for Java**
-- **Lombok Support**
-- **Docker Extension** para manejar los contenedores de Docker
+	#### 1.2. Configuración en Visual Studio Code
+	Configura tu entorno de desarrollo en Visual Studio Code con las siguientes extensiones:
+	- **Extension Pack for Java**
+	- **Lombok Support**
+	- **Docker Extension** para manejar los contenedores de Docker
 
 ---
 
 ### **2. Configuración de Bases de Datos PostgreSQL**
 
-#### 2.1. Uso de Docker para PostgreSQL
-Para ambas bases de datos (`clientes_db` y `cuentas_db`), usaremos **PostgreSQL** como motor de base de datos. En el archivo `docker-compose.yml`, se definirán los servicios de PostgreSQL para ambos microservicios.
+	#### 2.1. Uso de Docker para PostgreSQL
+	Para ambas bases de datos (`clientes_db` y `cuentas_db`), usaremos **PostgreSQL** como motor de base de datos. En el archivo `docker-compose.yml`, se definirán los servicios de PostgreSQL para ambos microservicios.
 
-Cada microservicio tendrá su propia base de datos PostgreSQL, una para `clientes_personas` y otra para `cuentas_movimientos`.
+	Cada microservicio tendrá su propia base de datos PostgreSQL, una para `clientes_personas` y otra para `cuentas_movimientos`.
 
 ---
 
 ### **3. Script de Base de Datos PostgreSQL**
 
-#### 3.1. Microservicio `clientes_personas`
-**Base de Datos:** `clientes_db`
+	#### 3.1. Microservicio `clientes_personas`
+	**Base de Datos:** `clientes_db`
 
-Este microservicio manejará la información de **Personas** y **Clientes**, donde **Cliente** es una extensión de **Persona**. La base de datos `clientes_db` contendrá las tablas necesarias para estos datos.
+	Este microservicio manejará la información de **Personas** y **Clientes**, donde **Cliente** es una extensión de **Persona**. La base de datos `clientes_db` contendrá las tablas necesarias para estos datos.
 
-- **Tabla `persona`:** Almacena información básica como nombre, género, edad, identificación, dirección, y teléfono.
-- **Tabla `cliente`:** Extiende la tabla `persona` e incluye atributos como `cliente_id`, contraseña y estado del cliente.
+	- **Tabla `persona`:** Almacena información básica como nombre, género, edad, identificación, dirección, y teléfono.
+	- **Tabla `cliente`:** Extiende la tabla `persona` e incluye atributos como `cliente_id`, contraseña y estado del cliente.
 
-#### 3.2. Microservicio `cuentas_movimientos`
-**Base de Datos:** `cuentas_db`
+	#### 3.2. Microservicio `cuentas_movimientos`
+	**Base de Datos:** `cuentas_db`
 
-Este microservicio manejará la información de **Cuentas** y **Movimientos**.
+	Este microservicio manejará la información de **Cuentas** y **Movimientos**.
 
-- **Tabla `cuenta`:** Almacena información de las cuentas, como número de cuenta, tipo de cuenta, saldo inicial, y el estado de la cuenta. Cada cuenta está asociada a un cliente.
-- **Tabla `movimiento`:** Almacena las transacciones realizadas en las cuentas, como depósitos y retiros. Cada movimiento tiene un valor y un saldo resultante.
+	- **Tabla `cuenta`:** Almacena información de las cuentas, como número de cuenta, tipo de cuenta, saldo inicial, y el estado de la cuenta. Cada cuenta está asociada a un cliente.
+	- **Tabla `movimiento`:** Almacena las transacciones realizadas en las cuentas, como depósitos y retiros. Cada movimiento tiene un valor y un saldo resultante.
 
 ---
 
