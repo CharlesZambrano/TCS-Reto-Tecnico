@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
@@ -69,4 +70,9 @@ public class Movimiento implements Serializable {
     @ManyToOne
     @JoinColumn(name = "numero_cuenta", referencedColumnName = "numero_cuenta", nullable = false)
     private Cuenta cuenta;
+
+    @PrePersist
+    public void prePersist() {
+        this.fecha = LocalDateTime.now();
+    }
 }

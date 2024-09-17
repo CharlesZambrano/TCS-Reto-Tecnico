@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tcs.microservices.cuentas_movimientos.dto.MovimientoDTO;
+import com.tcs.microservices.cuentas_movimientos.model.Cuenta;
 import com.tcs.microservices.cuentas_movimientos.model.Movimiento;
+import com.tcs.microservices.cuentas_movimientos.repository.CuentaRepository;
 import com.tcs.microservices.cuentas_movimientos.repository.MovimientoRepository;
 import com.tcs.microservices.cuentas_movimientos.util.mapper.CuentaMovimientoMapper;
 import com.tcs.microservices.cuentas_movimientos.util.mapper.UniqueIdGeneration;
@@ -18,12 +20,15 @@ import jakarta.persistence.EntityNotFoundException;
 public class MovimientoService {
 
     private final MovimientoRepository movimientoRepository;
+    private final CuentaRepository cuentaRepository;
     private final CuentaMovimientoMapper cuentaMovimientoMapper;
     private final UniqueIdGeneration uniqueIdGeneration;
 
-    public MovimientoService(MovimientoRepository movimientoRepository, CuentaMovimientoMapper cuentaMovimientoMapper,
+    public MovimientoService(MovimientoRepository movimientoRepository, CuentaRepository cuentaRepository,
+            CuentaMovimientoMapper cuentaMovimientoMapper,
             UniqueIdGeneration uniqueIdGeneration) {
         this.movimientoRepository = movimientoRepository;
+        this.cuentaRepository = cuentaRepository;
         this.cuentaMovimientoMapper = cuentaMovimientoMapper;
         this.uniqueIdGeneration = uniqueIdGeneration;
     }
@@ -45,7 +50,11 @@ public class MovimientoService {
 
     @Transactional
     public MovimientoDTO crearMovimiento(MovimientoDTO movimientoDTO) {
+        Cuenta cuenta = cuentaRepository.findByNumeroCuenta(movimientoDTO.getNumeroCuenta())
+                .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada"));
+
         Movimiento movimiento = cuentaMovimientoMapper.movimientoDTOToMovimiento(movimientoDTO);
+        movimiento.setCuenta(cuenta);
         movimiento.setUniqueId(uniqueIdGeneration.getUniqueId());
         movimiento = movimientoRepository.save(movimiento);
         return cuentaMovimientoMapper.movimientoToMovimientoDTO(movimiento);

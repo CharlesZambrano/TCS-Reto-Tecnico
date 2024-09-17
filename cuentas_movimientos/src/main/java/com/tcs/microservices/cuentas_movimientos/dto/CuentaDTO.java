@@ -17,8 +17,6 @@ public class CuentaDTO {
 
     private Long id;
 
-    @NotBlank(message = "El identificador único no puede estar vacío")
-    @Size(max = 16, message = "El identificador único no puede tener más de 16 caracteres")
     private String uniqueId;
 
     @NotBlank(message = "El número de cuenta no puede estar vacío")

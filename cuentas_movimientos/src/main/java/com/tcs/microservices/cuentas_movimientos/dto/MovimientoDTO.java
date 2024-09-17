@@ -18,8 +18,6 @@ public class MovimientoDTO {
 
     private Long id;
 
-    @NotBlank(message = "El identificador único no puede estar vacío")
-    @Size(max = 16, message = "El identificador único no puede tener más de 16 caracteres")
     private String uniqueId;
 
     private LocalDateTime fecha;

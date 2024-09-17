@@ -14,12 +14,10 @@ public interface CuentaMovimientoMapper {
 
         CuentaMovimientoMapper INSTANCE = Mappers.getMapper(CuentaMovimientoMapper.class);
 
-        // Mapeo entre Cuenta y CuentaDTO
         CuentaDTO cuentaToCuentaDTO(Cuenta cuenta);
 
         Cuenta cuentaDTOToCuenta(CuentaDTO cuentaDTO);
 
-        // Mapeo entre Movimiento y MovimientoDTO
         @Mapping(source = "cuenta.numeroCuenta", target = "numeroCuenta")
         MovimientoDTO movimientoToMovimientoDTO(Movimiento movimiento);
 
