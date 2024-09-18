@@ -1,16 +1,16 @@
-
 # Reto Técnico Backend: Microservicios con Spring Boot, PostgreSQL y RabbitMQ
 
 Este proyecto implementa un sistema basado en microservicios utilizando **Spring Boot**, **PostgreSQL**, **RabbitMQ** y **Docker Compose**. El sistema maneja la información de clientes, cuentas y movimientos, aplicando principios de diseño **SOLID** y buenas prácticas de arquitectura de software.
 
 ## Tabla de Contenidos
+
 1. [Descripción General](#descripción-general)
 2. [Arquitectura](#arquitectura)
 3. [Requisitos](#requisitos)
 4. [Instalación y Despliegue](#instalación-y-despliegue)
 5. [Microservicios](#microservicios)
-    - [Clientes y Personas](#clientes-y-personas)
-    - [Cuentas y Movimientos](#cuentas-y-movimientos)
+   - [Clientes y Personas](#clientes-y-personas)
+   - [Cuentas y Movimientos](#cuentas-y-movimientos)
 6. [Bases de Datos](#bases-de-datos)
 7. [Mensajería con RabbitMQ](#mensajería-con-rabbitmq)
 8. [Pruebas](#pruebas)
@@ -47,7 +47,7 @@ Para ejecutar este proyecto, necesitas tener instalados los siguientes component
 Clona el repositorio en tu máquina local:
 
 ```bash
-git clone https://github.com/usuario/repo.git
+git clone https://github.com/usuario/TCS-Reto-Tecnico.git
 cd repo
 ```
 
@@ -73,7 +73,7 @@ cd ..
 Una vez que los microservicios estén compilados, ejecuta el siguiente comando para levantar los contenedores de Docker:
 
 ```bash
-docker-compose up --build
+docker-compose up --build -d
 ```
 
 Esto construirá las imágenes de los microservicios y levantará los servicios necesarios, como **PostgreSQL** y **RabbitMQ**.
@@ -146,9 +146,10 @@ El proyecto incluye pruebas unitarias y de integración:
 1. **Pruebas Unitarias**: Implementadas con **JUnit** y **Mockito** para validar la lógica de negocio.
 2. **Pruebas de Integración**: Aseguran la correcta comunicación entre microservicios y la interacción con RabbitMQ.
 
-Para ejecutar las pruebas:
+Para ejecutar las pruebas dentro de cada microservicio ejecutar:
+
 ```bash
-./mvnw test
+./gradlew test
 ```
 
 ## Documentación de la API
