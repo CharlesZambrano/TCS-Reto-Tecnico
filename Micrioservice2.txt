@@ -47,8 +47,14 @@ MICROSERVICIO 2:
 			compileOnly 'org.projectlombok:lombok' 
 			annotationProcessor 'org.projectlombok:lombok' 
 
+			// Swagger dependencies
+			implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0'
+			
 			// Driver para PostgreSQL
 			runtimeOnly 'org.postgresql:postgresql'
+
+			// Jakarta Servlet API
+			implementation 'jakarta.servlet:jakarta.servlet-api:6.0.0'
 
 			// Herramientas para el desarrollo
 			developmentOnly 'org.springframework.boot:spring-boot-devtools'
@@ -155,6 +161,22 @@ MICROSERVICIO 2:
 
 			public static void main(String[] args) {
 				SpringApplication.run(CuentasMovimientosApplication.class, args);
+			}
+
+		}
+
+	Clase principal Test:
+
+		package com.tcs.microservices.cuentas_movimientos;
+
+		import org.junit.jupiter.api.Test;
+		import org.springframework.boot.test.context.SpringBootTest;
+
+		@SpringBootTest
+		class CuentasMovimientosApplicationTests {
+
+			@Test
+			void contextLoads() {
 			}
 
 		}
@@ -321,15 +343,30 @@ MICROSERVICIO 2:
 			@Setter
 			public class ClienteDTO {
 			    private Long id;
+			    private String contraseña;
+			    private Boolean estado;
+			    private PersonaDTO persona;
+			}
+
+		PersonaDTO:
+
+			package com.tcs.microservices.cuentas_movimientos.dto;
+
+			import lombok.Getter;
+			import lombok.Setter;
+
+			@Getter
+			@Setter
+			public class PersonaDTO {
+			    private Long id;
 			    private String nombre;
 			    private String genero;
 			    private Integer edad;
 			    private String identificacion;
 			    private String direccion;
 			    private String telefono;
-			    private Boolean estado;
 			}
-
+		
 		CuentaDTO:
 
 			package com.tcs.microservices.cuentas_movimientos.dto;
@@ -409,12 +446,38 @@ MICROSERVICIO 2:
 			    private BigDecimal saldoDisponible;
 			}
 
+		ReporteMovimientoDTO:
+
+			package com.tcs.microservices.cuentas_movimientos.dto;
+
+			import java.math.BigDecimal;
+			import java.time.LocalDateTime;
+
+			import lombok.Builder;
+			import lombok.Getter;
+			import lombok.Setter;
+
+			@Getter
+			@Setter
+			@Builder
+			public class ReporteMovimientoDTO {
+			    private LocalDateTime fecha;
+			    private String cliente;
+			    private String numeroCuenta;
+			    private String tipoCuenta;
+			    private String tipoMovimiento;
+			    private BigDecimal saldoInicial;
+			    private BigDecimal valorMovimiento;
+			    private BigDecimal saldoDisponible;
+			}
+
 	Repository:
 
 		CuentaRepository:
 
 			package com.tcs.microservices.cuentas_movimientos.repository;
 
+			import java.util.List;
 			import java.util.Optional;
 
 			import org.springframework.data.jpa.repository.JpaRepository;
@@ -425,12 +488,16 @@ MICROSERVICIO 2:
 			@Repository
 			public interface CuentaRepository extends JpaRepository<Cuenta, Long> {
 			    Optional<Cuenta> findByNumeroCuenta(String numeroCuenta);
-			}
 
+			    List<Cuenta> findByClienteId(Long clienteId);
+			}
 
 		MovimientoRepository:
 
 			package com.tcs.microservices.cuentas_movimientos.repository;
+
+			import java.time.LocalDateTime;
+			import java.util.List;
 
 			import org.springframework.data.jpa.repository.JpaRepository;
 			import org.springframework.stereotype.Repository;
@@ -439,6 +506,10 @@ MICROSERVICIO 2:
 
 			@Repository
 			public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
+
+			    List<Movimiento> findByCuenta_NumeroCuentaAndFechaBetweenOrderByFechaAsc(String numeroCuenta,
+			            LocalDateTime fechaInicio,
+			            LocalDateTime fechaFin);
 			}
 
 	Service:
@@ -705,6 +776,91 @@ MICROSERVICIO 2:
 			    }
 			}
 
+		ReporteService:
+
+			package com.tcs.microservices.cuentas_movimientos.service;
+
+			import java.math.BigDecimal;
+			import java.time.LocalDate;
+			import java.time.LocalDateTime;
+			import java.util.List;
+			import java.util.concurrent.atomic.AtomicReference;
+			import java.util.stream.Collectors;
+
+			import org.springframework.beans.factory.annotation.Value;
+			import org.springframework.stereotype.Service;
+			import org.springframework.transaction.annotation.Transactional;
+			import org.springframework.web.client.RestTemplate;
+
+			import com.tcs.microservices.cuentas_movimientos.dto.ClienteDTO;
+			import com.tcs.microservices.cuentas_movimientos.dto.ReporteMovimientoDTO;
+			import com.tcs.microservices.cuentas_movimientos.model.Cuenta;
+			import com.tcs.microservices.cuentas_movimientos.model.Movimiento;
+			import com.tcs.microservices.cuentas_movimientos.repository.CuentaRepository;
+			import com.tcs.microservices.cuentas_movimientos.repository.MovimientoRepository;
+			import com.tcs.microservices.cuentas_movimientos.util.mapper.CuentaMovimientoMapper;
+
+			@Service
+			public class ReporteService {
+
+			    private final CuentaRepository cuentaRepository;
+			    private final MovimientoRepository movimientoRepository;
+			    private final CuentaMovimientoMapper cuentaMovimientoMapper;
+			    private final RestTemplate restTemplate;
+
+			    @Value("${clientes.personas.base.url}")
+			    private String clientesPersonasBaseUrl;
+
+			    public ReporteService(CuentaRepository cuentaRepository, MovimientoRepository movimientoRepository,
+			            CuentaMovimientoMapper cuentaMovimientoMapper, RestTemplate restTemplate) {
+			        this.cuentaRepository = cuentaRepository;
+			        this.movimientoRepository = movimientoRepository;
+			        this.cuentaMovimientoMapper = cuentaMovimientoMapper;
+			        this.restTemplate = restTemplate;
+			    }
+
+			    @Transactional(readOnly = true)
+			    public List<ReporteMovimientoDTO> generarReporte(Long clienteId, LocalDate fechaInicio, LocalDate fechaFin) {
+			        LocalDateTime inicio = fechaInicio.atStartOfDay();
+			        LocalDateTime fin = fechaFin.atTime(23, 59, 59);
+
+			        List<Cuenta> cuentas = cuentaRepository.findByClienteId(clienteId);
+
+			        String clienteNombre = obtenerNombreCliente(clienteId);
+
+			        return cuentas.stream()
+			                .flatMap(cuenta -> {
+			                    List<Movimiento> movimientos = movimientoRepository
+			                            .findByCuenta_NumeroCuentaAndFechaBetweenOrderByFechaAsc(cuenta.getNumeroCuenta(), inicio,
+			                                    fin);
+
+			                    AtomicReference<BigDecimal> saldoInicialCuenta = new AtomicReference<>(cuenta.getSaldoInicial());
+
+			                    return movimientos.stream().map(movimiento -> {
+			                        ReporteMovimientoDTO reporte = cuentaMovimientoMapper.toReporteMovimientoDTO(cuenta,
+			                                movimiento);
+
+			                        reporte.setSaldoInicial(saldoInicialCuenta.get());
+
+			                        saldoInicialCuenta.set(movimiento.getSaldoDisponible());
+
+			                        reporte.setCliente(clienteNombre);
+
+			                        return reporte;
+			                    });
+			                })
+			                .collect(Collectors.toList());
+			    }
+
+			    private String obtenerNombreCliente(Long clienteId) {
+			        String url = clientesPersonasBaseUrl + "/clientes/" + clienteId;
+			        ClienteDTO clienteDTO = restTemplate.getForObject(url, ClienteDTO.class);
+
+			        return clienteDTO != null && clienteDTO.getPersona() != null ? clienteDTO.getPersona().getNombre()
+			                : "Cliente Desconocido";
+			    }
+			}
+
 	Controller:
 
 		CuentaController:
@@ -730,6 +886,13 @@ MICROSERVICIO 2:
 			import com.tcs.microservices.cuentas_movimientos.dto.CuentaDTO;
 			import com.tcs.microservices.cuentas_movimientos.service.CuentaService;
 
+			import io.swagger.v3.oas.annotations.Operation;
+			import io.swagger.v3.oas.annotations.responses.ApiResponse;
+			import io.swagger.v3.oas.annotations.responses.ApiResponses;
+			import io.swagger.v3.oas.annotations.tags.Tag;
+			import jakarta.persistence.EntityNotFoundException;
+
+			@Tag(name = "Cuentas", description = "Operaciones relacionadas con las cuentas")
 			@CrossOrigin(origins = "*", allowedHeaders = "*", methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
 			        RequestMethod.DELETE })
 			@RestController
@@ -742,35 +905,76 @@ MICROSERVICIO 2:
 			        this.cuentaService = cuentaService;
 			    }
 
+			    @Operation(summary = "Obtener todas las cuentas")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "200", description = "Operación exitosa"),
+			            @ApiResponse(responseCode = "204", description = "No se encontraron cuentas")
+			    })
 			    @GetMapping
 			    public ResponseEntity<List<CuentaDTO>> obtenerCuentas() {
 			        List<CuentaDTO> cuentas = cuentaService.obtenerCuentas();
+			        if (cuentas.isEmpty()) {
+			            return ResponseEntity.noContent().build();
+			        }
 			        return ResponseEntity.ok(cuentas);
 			    }
 
+			    @Operation(summary = "Obtener una cuenta por ID")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "200", description = "Cuenta encontrada"),
+			            @ApiResponse(responseCode = "404", description = "Cuenta no encontrada")
+			    })
 			    @GetMapping("/{id}")
 			    public ResponseEntity<CuentaDTO> obtenerCuentaPorId(@PathVariable Long id) {
-			        CuentaDTO cuenta = cuentaService.obtenerCuentaPorId(id);
-			        return ResponseEntity.ok(cuenta);
+			        try {
+			            CuentaDTO cuenta = cuentaService.obtenerCuentaPorId(id);
+			            return ResponseEntity.ok(cuenta);
+			        } catch (EntityNotFoundException ex) {
+			            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			        }
 			    }
 
+			    @Operation(summary = "Crear una nueva cuenta")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "201", description = "Cuenta creada exitosamente"),
+			            @ApiResponse(responseCode = "400", description = "Error en la validación de los datos de la cuenta")
+			    })
 			    @PostMapping
 			    public ResponseEntity<CuentaDTO> crearCuenta(@Validated @RequestBody CuentaDTO cuentaDTO) {
 			        CuentaDTO nuevaCuenta = cuentaService.crearCuenta(cuentaDTO);
 			        return new ResponseEntity<>(nuevaCuenta, HttpStatus.CREATED);
 			    }
 
+			    @Operation(summary = "Actualizar una cuenta")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "200", description = "Cuenta actualizada exitosamente"),
+			            @ApiResponse(responseCode = "400", description = "Error en la validación de los datos de la cuenta"),
+			            @ApiResponse(responseCode = "404", description = "Cuenta no encontrada")
+			    })
 			    @PutMapping("/{id}")
 			    public ResponseEntity<CuentaDTO> actualizarCuenta(@PathVariable Long id,
 			            @Validated @RequestBody CuentaDTO cuentaDTO) {
-			        CuentaDTO cuentaActualizada = cuentaService.actualizarCuenta(id, cuentaDTO);
-			        return ResponseEntity.ok(cuentaActualizada);
+			        try {
+			            CuentaDTO cuentaActualizada = cuentaService.actualizarCuenta(id, cuentaDTO);
+			            return ResponseEntity.ok(cuentaActualizada);
+			        } catch (EntityNotFoundException ex) {
+			            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			        }
 			    }
 
+			    @Operation(summary = "Eliminar una cuenta")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "204", description = "Cuenta eliminada exitosamente"),
+			            @ApiResponse(responseCode = "404", description = "Cuenta no encontrada")
+			    })
 			    @DeleteMapping("/{id}")
 			    public ResponseEntity<Void> eliminarCuenta(@PathVariable Long id) {
-			        cuentaService.eliminarCuenta(id);
-			        return ResponseEntity.noContent().build();
+			        try {
+			            cuentaService.eliminarCuenta(id);
+			            return ResponseEntity.noContent().build();
+			        } catch (EntityNotFoundException ex) {
+			            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			        }
 			    }
 			}
 
@@ -799,6 +1003,13 @@ MICROSERVICIO 2:
 			import com.tcs.microservices.cuentas_movimientos.service.MovimientoPublisher;
 			import com.tcs.microservices.cuentas_movimientos.service.MovimientoService;
 
+			import io.swagger.v3.oas.annotations.Operation;
+			import io.swagger.v3.oas.annotations.responses.ApiResponse;
+			import io.swagger.v3.oas.annotations.responses.ApiResponses;
+			import io.swagger.v3.oas.annotations.tags.Tag;
+			import jakarta.persistence.EntityNotFoundException;
+
+			@Tag(name = "Movimientos", description = "Operaciones relacionadas con los movimientos")
 			@CrossOrigin(origins = "*", allowedHeaders = "*", methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
 			        RequestMethod.DELETE })
 			@RestController
@@ -813,21 +1024,45 @@ MICROSERVICIO 2:
 			        this.movimientoPublisher = movimientoPublisher;
 			    }
 
+			    @Operation(summary = "Obtener todos los movimientos")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "200", description = "Operación exitosa"),
+			            @ApiResponse(responseCode = "204", description = "No se encontraron movimientos")
+			    })
 			    @GetMapping
 			    public ResponseEntity<List<MovimientoDTO>> obtenerMovimientos() {
 			        List<MovimientoDTO> movimientos = movimientoService.obtenerMovimientos();
+			        if (movimientos.isEmpty()) {
+			            return ResponseEntity.noContent().build();
+			        }
 			        return ResponseEntity.ok(movimientos);
 			    }
 
+			    @Operation(summary = "Obtener un movimiento por ID")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "200", description = "Movimiento encontrado"),
+			            @ApiResponse(responseCode = "404", description = "Movimiento no encontrado")
+			    })
 			    @GetMapping("/{id}")
 			    public ResponseEntity<MovimientoDTO> obtenerMovimientoPorId(@PathVariable Long id) {
-			        MovimientoDTO movimiento = movimientoService.obtenerMovimientoPorId(id);
-			        return ResponseEntity.ok(movimiento);
+			        try {
+			            MovimientoDTO movimiento = movimientoService.obtenerMovimientoPorId(id);
+			            return ResponseEntity.ok(movimiento);
+			        } catch (EntityNotFoundException ex) {
+			            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			        }
 			    }
 
+			    @Operation(summary = "Crear un nuevo movimiento")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "201", description = "Movimiento creado exitosamente"),
+			            @ApiResponse(responseCode = "400", description = "Error en la validación de los datos del movimiento")
+			    })
 			    @PostMapping
 			    public ResponseEntity<MovimientoDTO> crearMovimiento(@Validated @RequestBody MovimientoDTO movimientoDTO) {
 			        MovimientoDTO nuevoMovimiento = movimientoService.crearMovimiento(movimientoDTO);
+
+			        // Publicar mensajes adicionales si es necesario
 			        if (nuevoMovimiento.getSaldoDisponible().compareTo(BigDecimal.valueOf(100)) < 0) {
 			            movimientoPublisher.publishMovimiento("Saldo bajo: " + nuevoMovimiento.getSaldoDisponible());
 			        }
@@ -839,19 +1074,90 @@ MICROSERVICIO 2:
 			        return new ResponseEntity<>(nuevoMovimiento, HttpStatus.CREATED);
 			    }
 
+			    @Operation(summary = "Actualizar un movimiento")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "200", description = "Movimiento actualizado exitosamente"),
+			            @ApiResponse(responseCode = "400", description = "Error en la validación de los datos del movimiento"),
+			            @ApiResponse(responseCode = "404", description = "Movimiento no encontrado")
+			    })
 			    @PutMapping("/{id}")
 			    public ResponseEntity<MovimientoDTO> actualizarMovimiento(@PathVariable Long id,
 			            @Validated @RequestBody MovimientoDTO movimientoDTO) {
-			        MovimientoDTO movimientoActualizado = movimientoService.actualizarMovimiento(id, movimientoDTO);
-			        return ResponseEntity.ok(movimientoActualizado);
+			        try {
+			            MovimientoDTO movimientoActualizado = movimientoService.actualizarMovimiento(id, movimientoDTO);
+			            return ResponseEntity.ok(movimientoActualizado);
+			        } catch (EntityNotFoundException ex) {
+			            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			        }
 			    }
 
+			    @Operation(summary = "Eliminar un movimiento")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "204", description = "Movimiento eliminado exitosamente"),
+			            @ApiResponse(responseCode = "404", description = "Movimiento no encontrado")
+			    })
 			    @DeleteMapping("/{id}")
 			    public ResponseEntity<Void> eliminarMovimiento(@PathVariable Long id) {
-			        movimientoService.eliminarMovimiento(id);
-			        return ResponseEntity.noContent().build();
+			        try {
+			            movimientoService.eliminarMovimiento(id);
+			            return ResponseEntity.noContent().build();
+			        } catch (EntityNotFoundException ex) {
+			            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			        }
+			    }
+			}
+
+		ReporteController:
+
+			package com.tcs.microservices.cuentas_movimientos.controller;
+
+			import java.time.LocalDate;
+			import java.util.List;
+
+			import org.springframework.http.HttpStatus;
+			import org.springframework.http.ResponseEntity;
+			import org.springframework.web.bind.annotation.CrossOrigin;
+			import org.springframework.web.bind.annotation.GetMapping;
+			import org.springframework.web.bind.annotation.RequestMapping;
+			import org.springframework.web.bind.annotation.RequestParam;
+			import org.springframework.web.bind.annotation.RestController;
+
+			import com.tcs.microservices.cuentas_movimientos.dto.ReporteMovimientoDTO;
+			import com.tcs.microservices.cuentas_movimientos.service.ReporteService;
+
+			import io.swagger.v3.oas.annotations.Operation;
+			import io.swagger.v3.oas.annotations.responses.ApiResponse;
+			import io.swagger.v3.oas.annotations.responses.ApiResponses;
+			import io.swagger.v3.oas.annotations.tags.Tag;
+
+			@Tag(name = "Reportes", description = "Operaciones relacionadas con los reportes de movimientos")
+			@CrossOrigin(origins = "*")
+			@RestController
+			@RequestMapping("/api/v1/reportes")
+			public class ReporteController {
+
+			    private final ReporteService reporteService;
+
+			    public ReporteController(ReporteService reporteService) {
+			        this.reporteService = reporteService;
 			    }
 
+			    @Operation(summary = "Generar reporte de movimientos")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "200", description = "Reporte generado exitosamente"),
+			            @ApiResponse(responseCode = "404", description = "No se encontraron movimientos para el rango de fechas")
+			    })
+			    @GetMapping
+			    public ResponseEntity<List<ReporteMovimientoDTO>> obtenerReporteMovimientos(
+			            @RequestParam Long clienteId,
+			            @RequestParam LocalDate fechaInicio,
+			            @RequestParam LocalDate fechaFin) {
+			        List<ReporteMovimientoDTO> reporte = reporteService.generarReporte(clienteId, fechaInicio, fechaFin);
+			        if (reporte.isEmpty()) {
+			            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			        }
+			        return ResponseEntity.ok(reporte);
+			    }
 			}
 
 	Config:
@@ -961,6 +1267,7 @@ MICROSERVICIO 2:
 
 		import com.tcs.microservices.cuentas_movimientos.dto.CuentaDTO;
 		import com.tcs.microservices.cuentas_movimientos.dto.MovimientoDTO;
+		import com.tcs.microservices.cuentas_movimientos.dto.ReporteMovimientoDTO;
 		import com.tcs.microservices.cuentas_movimientos.model.Cuenta;
 		import com.tcs.microservices.cuentas_movimientos.model.Movimiento;
 
@@ -978,6 +1285,16 @@ MICROSERVICIO 2:
 
 		        @Mapping(source = "numeroCuenta", target = "cuenta.numeroCuenta")
 		        Movimiento movimientoDTOToMovimiento(MovimientoDTO movimientoDTO);
+
+		        @Mapping(source = "cuenta.numeroCuenta", target = "numeroCuenta")
+		        @Mapping(source = "cuenta.saldoInicial", target = "saldoInicial")
+		        @Mapping(source = "cuenta.tipo", target = "tipoCuenta")
+		        @Mapping(source = "movimiento.saldoDisponible", target = "saldoDisponible")
+		        @Mapping(source = "movimiento.fecha", target = "fecha")
+		        @Mapping(source = "movimiento.tipo", target = "tipoMovimiento")
+		        @Mapping(source = "movimiento.valor", target = "valorMovimiento")
+		        @Mapping(target = "cliente", ignore = true)
+		        ReporteMovimientoDTO toReporteMovimientoDTO(Cuenta cuenta, Movimiento movimiento);
 		}
 
 	Exception:

@@ -151,7 +151,7 @@ Escribe pruebas de integración para asegurarte de que las APIs funcionan correc
 El archivo `docker-compose.yml` debe incluir la configuración completa para orquestar los microservicios junto con PostgreSQL y RabbitMQ.
 
 ```yaml
-version: '3'
+version: "3"
 services:
   postgres_clientes:
     image: postgres:14
@@ -160,10 +160,13 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
     ports:
-      - "5432:5432"
+      - "5433:5432"
     container_name: postgres_clientes
+    volumes:
+      - ./db-init/clientes_personas.sql:/docker-entrypoint-initdb.d/clientes_personas.sql
     networks:
       - microservices-network
+    restart: always
 
   postgres_cuentas:
     image: postgres:14
@@ -172,10 +175,13 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
     ports:
-      - "5433:5432"
+      - "5434:5432"
     container_name: postgres_cuentas
+    volumes:
+      - ./db-init/cuentas_movimientos.sql:/docker-entrypoint-initdb.d/cuentas_movimientos.sql
     networks:
       - microservices-network
+    restart: always
 
   rabbitmq:
     image: rabbitmq:management
@@ -185,9 +191,11 @@ services:
     container_name: rabbitmq
     networks:
       - microservices-network
+    restart: always
 
   clientes_personas:
     build: ./clientes_personas
+    container_name: clientes-personas
     ports:
       - "8080:8080"
     depends_on:
@@ -200,8 +208,10 @@ services:
       SPRING_RABBITMQ_HOST: rabbitmq
     networks:
       - microservices-network
+
   cuentas_movimientos:
     build: ./cuentas_movimientos
+    container_name: cuentas-movimientos
     ports:
       - "8081:8081"
     depends_on:

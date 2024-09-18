@@ -1,7 +1,7 @@
 MICROSERVICIO 1:
 	
 	build.gradle:
-	
+
 		plugins {
 			id 'java'
 			id 'org.springframework.boot' version '3.3.3'
@@ -47,8 +47,8 @@ MICROSERVICIO 1:
 		    compileOnly 'org.projectlombok:lombok'
 		    annotationProcessor 'org.projectlombok:lombok'
 
-			// Swagger dependencies
-			implementation 'io.springfox:springfox-boot-starter:3.0.0'
+			// Swagger/OpenAPI
+			implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0'
 
 			// Driver para PostgreSQL
 			runtimeOnly 'org.postgresql:postgresql'
@@ -147,6 +147,22 @@ MICROSERVICIO 1:
 
 			public static void main(String[] args) {
 				SpringApplication.run(ClientesPersonasApplication.class, args);
+			}
+
+		}
+
+	Clase principal Test:
+
+		package com.tcs.microservices.clientes_personas;
+
+		import org.junit.jupiter.api.Test;
+		import org.springframework.boot.test.context.SpringBootTest;
+
+		@SpringBootTest
+		class ClientesPersonasApplicationTests {
+
+			@Test
+			void contextLoads() {
 			}
 
 		}
@@ -535,10 +551,13 @@ MICROSERVICIO 1:
 			import com.tcs.microservices.clientes_personas.dto.ClienteDTO;
 			import com.tcs.microservices.clientes_personas.service.ClienteService;
 
-			import io.swagger.annotations.Api;
-			import io.swagger.annotations.ApiOperation;
+			import io.swagger.v3.oas.annotations.Operation;
+			import io.swagger.v3.oas.annotations.responses.ApiResponse;
+			import io.swagger.v3.oas.annotations.responses.ApiResponses;
+			import io.swagger.v3.oas.annotations.tags.Tag;
+			import jakarta.persistence.EntityNotFoundException;
 
-			@Api(value = "ClienteController", tags = { "Clientes" })
+			@Tag(name = "Clientes", description = "Operaciones relacionadas con los clientes")
 			@CrossOrigin(origins = "*", allowedHeaders = "*", methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
 			        RequestMethod.DELETE })
 			@RestController
@@ -551,40 +570,76 @@ MICROSERVICIO 1:
 			        this.clienteService = clienteService;
 			    }
 
-			    @ApiOperation(value = "Obtener todos los clientes")
+			    @Operation(summary = "Obtener todos los clientes")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "200", description = "Operación exitosa"),
+			            @ApiResponse(responseCode = "204", description = "No se encontraron clientes")
+			    })
 			    @GetMapping
 			    public ResponseEntity<List<ClienteDTO>> obtenerClientes() {
 			        List<ClienteDTO> clientes = clienteService.obtenerClientes();
+			        if (clientes.isEmpty()) {
+			            return ResponseEntity.noContent().build();
+			        }
 			        return ResponseEntity.ok(clientes);
 			    }
 
-			    @ApiOperation(value = "Obtener cliente por ID")
+			    @Operation(summary = "Obtener un cliente por ID")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "200", description = "Cliente encontrado"),
+			            @ApiResponse(responseCode = "404", description = "Cliente no encontrado")
+			    })
 			    @GetMapping("/{id}")
 			    public ResponseEntity<ClienteDTO> obtenerClientePorId(@PathVariable Long id) {
-			        ClienteDTO cliente = clienteService.obtenerClientePorId(id);
-			        return ResponseEntity.ok(cliente);
+			        try {
+			            ClienteDTO cliente = clienteService.obtenerClientePorId(id);
+			            return ResponseEntity.ok(cliente);
+			        } catch (EntityNotFoundException ex) {
+			            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			        }
 			    }
 
-			    @ApiOperation(value = "Crear un nuevo cliente")
+			    @Operation(summary = "Crear un nuevo cliente")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "201", description = "Cliente creado exitosamente"),
+			            @ApiResponse(responseCode = "400", description = "Error en la validación de los datos del cliente")
+			    })
 			    @PostMapping
 			    public ResponseEntity<ClienteDTO> crearCliente(@Validated @RequestBody ClienteDTO clienteDTO) {
 			        ClienteDTO nuevoCliente = clienteService.crearCliente(clienteDTO);
 			        return new ResponseEntity<>(nuevoCliente, HttpStatus.CREATED);
 			    }
 
-			    @ApiOperation(value = "Actualizar un cliente")
+			    @Operation(summary = "Actualizar un cliente")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "200", description = "Cliente actualizado exitosamente"),
+			            @ApiResponse(responseCode = "400", description = "Error en la validación de los datos del cliente"),
+			            @ApiResponse(responseCode = "404", description = "Cliente no encontrado")
+			    })
 			    @PutMapping("/{id}")
 			    public ResponseEntity<ClienteDTO> actualizarCliente(@PathVariable Long id,
 			            @Validated @RequestBody ClienteDTO clienteDTO) {
-			        ClienteDTO clienteActualizado = clienteService.actualizarCliente(id, clienteDTO);
-			        return ResponseEntity.ok(clienteActualizado);
+			        try {
+			            ClienteDTO clienteActualizado = clienteService.actualizarCliente(id, clienteDTO);
+			            return ResponseEntity.ok(clienteActualizado);
+			        } catch (EntityNotFoundException ex) {
+			            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			        }
 			    }
 
-			    @ApiOperation(value = "Eliminar un cliente")
+			    @Operation(summary = "Eliminar un cliente")
+			    @ApiResponses({
+			            @ApiResponse(responseCode = "204", description = "Cliente eliminado exitosamente"),
+			            @ApiResponse(responseCode = "404", description = "Cliente no encontrado")
+			    })
 			    @DeleteMapping("/{id}")
 			    public ResponseEntity<Void> eliminarCliente(@PathVariable Long id) {
-			        clienteService.eliminarCliente(id);
-			        return ResponseEntity.noContent().build();
+			        try {
+			            clienteService.eliminarCliente(id);
+			            return ResponseEntity.noContent().build();
+			        } catch (EntityNotFoundException ex) {
+			            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			        }
 			    }
 			}
 
@@ -628,24 +683,30 @@ MICROSERVICIO 1:
 
 			package com.tcs.microservices.clientes_personas.config;
 
+			import org.springdoc.core.models.GroupedOpenApi;
 			import org.springframework.context.annotation.Bean;
 			import org.springframework.context.annotation.Configuration;
 
-			import springfox.documentation.builders.PathSelectors;
-			import springfox.documentation.builders.RequestHandlerSelectors;
-			import springfox.documentation.spi.DocumentationType;
-			import springfox.documentation.spring.web.plugins.Docket;
-			import springfox.documentation.swagger2.annotations.EnableSwagger2;
+			import io.swagger.v3.oas.models.OpenAPI;
+			import io.swagger.v3.oas.models.info.Info;
 
 			@Configuration
-			@EnableSwagger2
 			public class SwaggerConfig {
+
 			    @Bean
-			    public Docket api() {
-			        return new Docket(DocumentationType.SWAGGER_2)
-			                .select()
-			                .apis(RequestHandlerSelectors.basePackage("com.tcs.microservices"))
-			                .paths(PathSelectors.any())
+			    public OpenAPI customOpenAPI() {
+			        return new OpenAPI()
+			                .info(new Info()
+			                        .title("API de Clientes")
+			                        .version("V1")
+			                        .description("Documentación de la API para la gestión de clientes"));
+			    }
+
+			    @Bean
+			    public GroupedOpenApi publicApi() {
+			        return GroupedOpenApi.builder()
+			                .group("clientes-personas")
+			                .pathsToMatch("/api/v1/clientes/**")
 			                .build();
 			    }
 			}

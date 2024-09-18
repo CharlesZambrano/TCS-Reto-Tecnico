@@ -47,9 +47,9 @@ public class CuentaController {
     public ResponseEntity<List<CuentaDTO>> obtenerCuentas() {
         List<CuentaDTO> cuentas = cuentaService.obtenerCuentas();
         if (cuentas.isEmpty()) {
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.noContent().build(); // Devuelve 204 si no hay cuentas
         }
-        return ResponseEntity.ok(cuentas);
+        return ResponseEntity.ok(cuentas); // Devuelve 200 si hay cuentas
     }
 
     @Operation(summary = "Obtener una cuenta por ID")
@@ -61,9 +61,9 @@ public class CuentaController {
     public ResponseEntity<CuentaDTO> obtenerCuentaPorId(@PathVariable Long id) {
         try {
             CuentaDTO cuenta = cuentaService.obtenerCuentaPorId(id);
-            return ResponseEntity.ok(cuenta);
+            return ResponseEntity.ok(cuenta); // Devuelve 200 si la cuenta es encontrada
         } catch (EntityNotFoundException ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Devuelve 404 si no se encuentra la cuenta
         }
     }
 
@@ -75,7 +75,7 @@ public class CuentaController {
     @PostMapping
     public ResponseEntity<CuentaDTO> crearCuenta(@Validated @RequestBody CuentaDTO cuentaDTO) {
         CuentaDTO nuevaCuenta = cuentaService.crearCuenta(cuentaDTO);
-        return new ResponseEntity<>(nuevaCuenta, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(nuevaCuenta); // Devuelve 201 si la cuenta es creada
     }
 
     @Operation(summary = "Actualizar una cuenta")
@@ -89,9 +89,9 @@ public class CuentaController {
             @Validated @RequestBody CuentaDTO cuentaDTO) {
         try {
             CuentaDTO cuentaActualizada = cuentaService.actualizarCuenta(id, cuentaDTO);
-            return ResponseEntity.ok(cuentaActualizada);
+            return ResponseEntity.ok(cuentaActualizada); // Devuelve 200 si la cuenta es actualizada
         } catch (EntityNotFoundException ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Devuelve 404 si no se encuentra la cuenta
         }
     }
 
@@ -104,9 +104,9 @@ public class CuentaController {
     public ResponseEntity<Void> eliminarCuenta(@PathVariable Long id) {
         try {
             cuentaService.eliminarCuenta(id);
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.noContent().build(); // Devuelve 204 si la cuenta es eliminada
         } catch (EntityNotFoundException ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Devuelve 404 si no se encuentra la cuenta
         }
     }
 }
