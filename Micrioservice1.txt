@@ -1,6 +1,7 @@
 MICROSERVICIO 1:
 	
 	build.gradle:
+	
 		plugins {
 			id 'java'
 			id 'org.springframework.boot' version '3.3.3'
@@ -46,8 +47,14 @@ MICROSERVICIO 1:
 		    compileOnly 'org.projectlombok:lombok'
 		    annotationProcessor 'org.projectlombok:lombok'
 
+			// Swagger dependencies
+			implementation 'io.springfox:springfox-boot-starter:3.0.0'
+
 			// Driver para PostgreSQL
 			runtimeOnly 'org.postgresql:postgresql'
+
+			// Jakarta Servlet API
+			implementation 'jakarta.servlet:jakarta.servlet-api:6.0.0'
 
 			// Herramientas para el desarrollo
 			developmentOnly 'org.springframework.boot:spring-boot-devtools'
@@ -528,8 +535,12 @@ MICROSERVICIO 1:
 			import com.tcs.microservices.clientes_personas.dto.ClienteDTO;
 			import com.tcs.microservices.clientes_personas.service.ClienteService;
 
-			@CrossOrigin(origins = "*", allowedHeaders = "*", methods = { RequestMethod.GET, RequestMethod.POST,
-			        RequestMethod.PUT, RequestMethod.DELETE })
+			import io.swagger.annotations.Api;
+			import io.swagger.annotations.ApiOperation;
+
+			@Api(value = "ClienteController", tags = { "Clientes" })
+			@CrossOrigin(origins = "*", allowedHeaders = "*", methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
+			        RequestMethod.DELETE })
 			@RestController
 			@RequestMapping("/api/v1/clientes")
 			public class ClienteController {
@@ -540,24 +551,28 @@ MICROSERVICIO 1:
 			        this.clienteService = clienteService;
 			    }
 
+			    @ApiOperation(value = "Obtener todos los clientes")
 			    @GetMapping
 			    public ResponseEntity<List<ClienteDTO>> obtenerClientes() {
 			        List<ClienteDTO> clientes = clienteService.obtenerClientes();
 			        return ResponseEntity.ok(clientes);
 			    }
 
+			    @ApiOperation(value = "Obtener cliente por ID")
 			    @GetMapping("/{id}")
 			    public ResponseEntity<ClienteDTO> obtenerClientePorId(@PathVariable Long id) {
 			        ClienteDTO cliente = clienteService.obtenerClientePorId(id);
 			        return ResponseEntity.ok(cliente);
 			    }
 
+			    @ApiOperation(value = "Crear un nuevo cliente")
 			    @PostMapping
 			    public ResponseEntity<ClienteDTO> crearCliente(@Validated @RequestBody ClienteDTO clienteDTO) {
 			        ClienteDTO nuevoCliente = clienteService.crearCliente(clienteDTO);
 			        return new ResponseEntity<>(nuevoCliente, HttpStatus.CREATED);
 			    }
 
+			    @ApiOperation(value = "Actualizar un cliente")
 			    @PutMapping("/{id}")
 			    public ResponseEntity<ClienteDTO> actualizarCliente(@PathVariable Long id,
 			            @Validated @RequestBody ClienteDTO clienteDTO) {
@@ -565,6 +580,7 @@ MICROSERVICIO 1:
 			        return ResponseEntity.ok(clienteActualizado);
 			    }
 
+			    @ApiOperation(value = "Eliminar un cliente")
 			    @DeleteMapping("/{id}")
 			    public ResponseEntity<Void> eliminarCliente(@PathVariable Long id) {
 			        clienteService.eliminarCliente(id);
@@ -605,6 +621,32 @@ MICROSERVICIO 1:
 			    @Bean
 			    public Binding binding(Queue queue, DirectExchange exchange) {
 			        return BindingBuilder.bind(queue).to(exchange).with(ROUTING_KEY);
+			    }
+			}
+
+		SwaggerConfig:
+
+			package com.tcs.microservices.clientes_personas.config;
+
+			import org.springframework.context.annotation.Bean;
+			import org.springframework.context.annotation.Configuration;
+
+			import springfox.documentation.builders.PathSelectors;
+			import springfox.documentation.builders.RequestHandlerSelectors;
+			import springfox.documentation.spi.DocumentationType;
+			import springfox.documentation.spring.web.plugins.Docket;
+			import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
+			@Configuration
+			@EnableSwagger2
+			public class SwaggerConfig {
+			    @Bean
+			    public Docket api() {
+			        return new Docket(DocumentationType.SWAGGER_2)
+			                .select()
+			                .apis(RequestHandlerSelectors.basePackage("com.tcs.microservices"))
+			                .paths(PathSelectors.any())
+			                .build();
 			    }
 			}
 

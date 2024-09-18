@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.tcs.microservices.cuentas_movimientos.dto.ReporteMovimientoDTO;
 import com.tcs.microservices.cuentas_movimientos.service.ReporteService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "Reportes", description = "Operaciones relacionadas con los reportes de movimientos")
 @CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/v1/reportes")
@@ -24,6 +28,7 @@ public class ReporteController {
         this.reporteService = reporteService;
     }
 
+    @Operation(summary = "Generar reporte de movimientos")
     @GetMapping
     public ResponseEntity<List<ReporteMovimientoDTO>> obtenerReporteMovimientos(
             @RequestParam Long clienteId,

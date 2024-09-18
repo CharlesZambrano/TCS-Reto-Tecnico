@@ -19,6 +19,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.tcs.microservices.cuentas_movimientos.dto.CuentaDTO;
 import com.tcs.microservices.cuentas_movimientos.service.CuentaService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "Cuentas", description = "Operaciones relacionadas con las cuentas")
 @CrossOrigin(origins = "*", allowedHeaders = "*", methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
         RequestMethod.DELETE })
 @RestController
@@ -31,24 +35,28 @@ public class CuentaController {
         this.cuentaService = cuentaService;
     }
 
+    @Operation(summary = "Obtener todas las cuentas")
     @GetMapping
     public ResponseEntity<List<CuentaDTO>> obtenerCuentas() {
         List<CuentaDTO> cuentas = cuentaService.obtenerCuentas();
         return ResponseEntity.ok(cuentas);
     }
 
+    @Operation(summary = "Obtener una cuenta por ID")
     @GetMapping("/{id}")
     public ResponseEntity<CuentaDTO> obtenerCuentaPorId(@PathVariable Long id) {
         CuentaDTO cuenta = cuentaService.obtenerCuentaPorId(id);
         return ResponseEntity.ok(cuenta);
     }
 
+    @Operation(summary = "Crear una nueva cuenta")
     @PostMapping
     public ResponseEntity<CuentaDTO> crearCuenta(@Validated @RequestBody CuentaDTO cuentaDTO) {
         CuentaDTO nuevaCuenta = cuentaService.crearCuenta(cuentaDTO);
         return new ResponseEntity<>(nuevaCuenta, HttpStatus.CREATED);
     }
 
+    @Operation(summary = "Actualizar una cuenta")
     @PutMapping("/{id}")
     public ResponseEntity<CuentaDTO> actualizarCuenta(@PathVariable Long id,
             @Validated @RequestBody CuentaDTO cuentaDTO) {
@@ -56,6 +64,7 @@ public class CuentaController {
         return ResponseEntity.ok(cuentaActualizada);
     }
 
+    @Operation(summary = "Eliminar una cuenta")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarCuenta(@PathVariable Long id) {
         cuentaService.eliminarCuenta(id);

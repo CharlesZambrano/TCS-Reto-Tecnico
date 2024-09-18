@@ -21,6 +21,10 @@ import com.tcs.microservices.cuentas_movimientos.dto.MovimientoDTO;
 import com.tcs.microservices.cuentas_movimientos.service.MovimientoPublisher;
 import com.tcs.microservices.cuentas_movimientos.service.MovimientoService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "Movimientos", description = "Operaciones relacionadas con los movimientos")
 @CrossOrigin(origins = "*", allowedHeaders = "*", methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
         RequestMethod.DELETE })
 @RestController
@@ -35,18 +39,21 @@ public class MovimientoController {
         this.movimientoPublisher = movimientoPublisher;
     }
 
+    @Operation(summary = "Obtener todos los movimientos")
     @GetMapping
     public ResponseEntity<List<MovimientoDTO>> obtenerMovimientos() {
         List<MovimientoDTO> movimientos = movimientoService.obtenerMovimientos();
         return ResponseEntity.ok(movimientos);
     }
 
+    @Operation(summary = "Obtener un movimiento por ID")
     @GetMapping("/{id}")
     public ResponseEntity<MovimientoDTO> obtenerMovimientoPorId(@PathVariable Long id) {
         MovimientoDTO movimiento = movimientoService.obtenerMovimientoPorId(id);
         return ResponseEntity.ok(movimiento);
     }
 
+    @Operation(summary = "Crear un nuevo movimiento")
     @PostMapping
     public ResponseEntity<MovimientoDTO> crearMovimiento(@Validated @RequestBody MovimientoDTO movimientoDTO) {
         MovimientoDTO nuevoMovimiento = movimientoService.crearMovimiento(movimientoDTO);
@@ -61,6 +68,7 @@ public class MovimientoController {
         return new ResponseEntity<>(nuevoMovimiento, HttpStatus.CREATED);
     }
 
+    @Operation(summary = "Actualizar un movimiento")
     @PutMapping("/{id}")
     public ResponseEntity<MovimientoDTO> actualizarMovimiento(@PathVariable Long id,
             @Validated @RequestBody MovimientoDTO movimientoDTO) {
@@ -68,10 +76,10 @@ public class MovimientoController {
         return ResponseEntity.ok(movimientoActualizado);
     }
 
+    @Operation(summary = "Eliminar un movimiento")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarMovimiento(@PathVariable Long id) {
         movimientoService.eliminarMovimiento(id);
         return ResponseEntity.noContent().build();
     }
-
 }
