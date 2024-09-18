@@ -1,0 +1,9 @@
+{
+  "properties": [
+    {
+      "name": "clientes.personas.base.url",
+      "type": "java.lang.String",
+      "description": "Base URL of Microservice Cuentas-Movimientos"
+    }
+  ]
+}
