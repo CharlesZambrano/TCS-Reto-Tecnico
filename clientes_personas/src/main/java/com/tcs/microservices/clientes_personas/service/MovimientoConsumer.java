@@ -11,7 +11,5 @@ public class MovimientoConsumer {
     @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
     public void recibirMensaje(String mensaje) {
         System.out.println("Mensaje recibido: " + mensaje);
-        // Aquí puedes agregar la lógica para procesar el mensaje, por ejemplo,
-        // actualizar datos de clientes
     }
 }

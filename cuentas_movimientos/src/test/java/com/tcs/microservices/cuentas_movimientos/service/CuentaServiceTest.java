@@ -14,7 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.util.ReflectionTestUtils; // Importar para inyectar la propiedad
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import com.tcs.microservices.cuentas_movimientos.dto.ClienteDTO;
@@ -48,7 +48,6 @@ public class CuentaServiceTest {
 
     @BeforeEach
     public void setup() {
-        // Inyectar la propiedad clientesPersonasBaseUrl en el servicio
         ReflectionTestUtils.setField(cuentaService, "clientesPersonasBaseUrl", "http://clientes-personas:8080");
 
         cuenta = new Cuenta();
@@ -68,7 +67,6 @@ public class CuentaServiceTest {
 
     @Test
     public void testCrearCuenta() {
-        // Simulamos la respuesta del servicio de clientes
         ClienteDTO clienteDTO = new ClienteDTO();
         clienteDTO.setId(1L);
         clienteDTO.setContraseña("password");
@@ -78,18 +76,14 @@ public class CuentaServiceTest {
         when(restTemplate.getForEntity(eq("http://clientes-personas:8080/clientes/1"), eq(ClienteDTO.class)))
                 .thenReturn(new ResponseEntity<>(clienteDTO, HttpStatus.OK));
 
-        // Simulamos el mapeo y guardado
         when(cuentaMovimientoMapper.cuentaDTOToCuenta(any(CuentaDTO.class))).thenReturn(cuenta);
         when(cuentaRepository.save(any(Cuenta.class))).thenReturn(cuenta);
         when(cuentaMovimientoMapper.cuentaToCuentaDTO(any(Cuenta.class))).thenReturn(cuentaDTO);
 
-        // Simulamos la generación de UniqueId
         when(uniqueIdGeneration.getUniqueId()).thenReturn("some-unique-id");
 
-        // Ejecutar la lógica de negocio
         CuentaDTO resultado = cuentaService.crearCuenta(cuentaDTO);
 
-        // Verificar que se guardó correctamente
         assertEquals(cuentaDTO.getId(), resultado.getId());
         verify(cuentaRepository, times(1)).save(cuenta);
     }

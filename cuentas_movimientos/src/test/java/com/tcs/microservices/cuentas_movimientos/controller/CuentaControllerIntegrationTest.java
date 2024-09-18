@@ -60,7 +60,6 @@ public class CuentaControllerIntegrationTest {
 
         @BeforeEach
         public void setup() {
-                // Crear una cuenta simulada
                 cuentaDTO = CuentaDTO.builder()
                                 .id(1L)
                                 .numeroCuenta("1234567890")
@@ -70,19 +69,16 @@ public class CuentaControllerIntegrationTest {
                                 .clienteId(1L)
                                 .build();
 
-                // Crear una instancia simulada de Cuenta
                 Cuenta cuenta = new Cuenta();
                 cuenta.setId(1L);
                 cuenta.setNumeroCuenta("1234567890");
                 cuenta.setEstado(true);
                 cuenta.setSaldoInicial(new BigDecimal("1000.00"));
 
-                // Mockear mapper y repositorio
                 when(cuentaMovimientoMapper.cuentaDTOToCuenta(any(CuentaDTO.class))).thenReturn(cuenta);
                 when(cuentaRepository.save(any(Cuenta.class))).thenReturn(cuenta);
                 when(cuentaMovimientoMapper.cuentaToCuentaDTO(any(Cuenta.class))).thenReturn(cuentaDTO);
 
-                // Mockear llamada al servicio REST
                 ClienteDTO clienteDTO = new ClienteDTO();
                 clienteDTO.setId(1L);
                 clienteDTO.setContraseña("password");
@@ -93,16 +89,13 @@ public class CuentaControllerIntegrationTest {
                                 eq(ClienteDTO.class)))
                                 .thenReturn(new ResponseEntity<>(clienteDTO, HttpStatus.OK));
 
-                // Mockear UniqueIdGeneration
                 when(uniqueIdGeneration.getUniqueId()).thenReturn("some-unique-id");
         }
 
         @Test
         public void testCrearCuenta() throws Exception {
-                // Simular la creación de la cuenta
                 String jsonContent = objectMapper.writeValueAsString(cuentaDTO);
 
-                // Realiza la petición y valida que el estado sea 201 CREATED
                 mockMvc.perform(post("/api/v1/cuentas")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(jsonContent))
