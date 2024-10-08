@@ -40,12 +40,12 @@ public class ClienteServiceTest {
     public void setup() {
         cliente = new Cliente();
         cliente.setId(1L);
-        cliente.setContraseña("password123");
+        cliente.setContraseña("2222");
         cliente.setEstado(true);
 
         clienteDTO = ClienteDTO.builder()
                 .id(1L)
-                .contraseña("password123")
+                .contraseña("2222")
                 .estado(true)
                 .build();
     }

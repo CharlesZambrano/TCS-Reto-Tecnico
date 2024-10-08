@@ -67,6 +67,51 @@ public class CuentaController {
         }
     }
 
+    @Operation(summary = "Obtener una cuenta por Número de Cuenta")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cuenta encontrada"),
+            @ApiResponse(responseCode = "404", description = "Cuenta no encontrada")
+    })
+    @GetMapping("/numero/{numeroCuenta}")
+    public ResponseEntity<CuentaDTO> obtenerCuentaPorNumeroCuenta(@PathVariable String numeroCuenta) {
+        try {
+            CuentaDTO cuenta = cuentaService.obtenerCuentaPorNumeroCuenta(numeroCuenta);
+            return ResponseEntity.ok(cuenta);
+        } catch (EntityNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @Operation(summary = "Obtener una cuenta por Unique ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cuenta encontrada"),
+            @ApiResponse(responseCode = "404", description = "Cuenta no encontrada")
+    })
+    @GetMapping("/unique/{uniqueId}")
+    public ResponseEntity<CuentaDTO> obtenerCuentaPorUniqueId(@PathVariable String uniqueId) {
+        try {
+            CuentaDTO cuenta = cuentaService.obtenerCuentaPorUniqueId(uniqueId);
+            return ResponseEntity.ok(cuenta);
+        } catch (EntityNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @Operation(summary = "Obtener una cuenta por Identificación del Cliente")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cuenta encontrada"),
+            @ApiResponse(responseCode = "404", description = "Cuenta no encontrada")
+    })
+    @GetMapping("/cliente/identificacion/{identificacion}")
+    public ResponseEntity<CuentaDTO> obtenerCuentaPorIdentificacionCliente(@PathVariable String identificacion) {
+        try {
+            CuentaDTO cuenta = cuentaService.obtenerCuentaPorIdentificacionCliente(identificacion);
+            return ResponseEntity.ok(cuenta);
+        } catch (EntityNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
     @Operation(summary = "Crear una nueva cuenta")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Cuenta creada exitosamente"),
@@ -95,6 +140,55 @@ public class CuentaController {
         }
     }
 
+    @Operation(summary = "Actualizar una cuenta por número de cuenta")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cuenta actualizada exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Cuenta no encontrada")
+    })
+    @PutMapping("/numero/{numeroCuenta}")
+    public ResponseEntity<CuentaDTO> actualizarCuentaPorNumeroCuenta(@PathVariable String numeroCuenta,
+            @Validated @RequestBody CuentaDTO cuentaDTO) {
+        try {
+            CuentaDTO cuentaActualizada = cuentaService.actualizarCuentaPorNumeroCuenta(numeroCuenta, cuentaDTO);
+            return ResponseEntity.ok(cuentaActualizada);
+        } catch (EntityNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @Operation(summary = "Actualizar una cuenta por Unique ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cuenta actualizada exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Cuenta no encontrada")
+    })
+    @PutMapping("/unique/{uniqueId}")
+    public ResponseEntity<CuentaDTO> actualizarCuentaPorUniqueId(@PathVariable String uniqueId,
+            @Validated @RequestBody CuentaDTO cuentaDTO) {
+        try {
+            CuentaDTO cuentaActualizada = cuentaService.actualizarCuentaPorUniqueId(uniqueId, cuentaDTO);
+            return ResponseEntity.ok(cuentaActualizada);
+        } catch (EntityNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @Operation(summary = "Actualizar una cuenta por Identificación del Cliente")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cuenta actualizada exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Cuenta no encontrada")
+    })
+    @PutMapping("/cliente/identificacion/{identificacion}")
+    public ResponseEntity<CuentaDTO> actualizarCuentaPorIdentificacionCliente(@PathVariable String identificacion,
+            @Validated @RequestBody CuentaDTO cuentaDTO) {
+        try {
+            CuentaDTO cuentaActualizada = cuentaService.actualizarCuentaPorIdentificacionCliente(identificacion,
+                    cuentaDTO);
+            return ResponseEntity.ok(cuentaActualizada);
+        } catch (EntityNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
     @Operation(summary = "Eliminar una cuenta")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Cuenta eliminada exitosamente"),
@@ -104,6 +198,51 @@ public class CuentaController {
     public ResponseEntity<Void> eliminarCuenta(@PathVariable Long id) {
         try {
             cuentaService.eliminarCuenta(id);
+            return ResponseEntity.noContent().build();
+        } catch (EntityNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @Operation(summary = "Eliminar una cuenta por número de cuenta")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Cuenta eliminada exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Cuenta no encontrada")
+    })
+    @DeleteMapping("/numero/{numeroCuenta}")
+    public ResponseEntity<Void> eliminarCuentaPorNumeroCuenta(@PathVariable String numeroCuenta) {
+        try {
+            cuentaService.eliminarCuentaPorNumeroCuenta(numeroCuenta);
+            return ResponseEntity.noContent().build();
+        } catch (EntityNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @Operation(summary = "Eliminar una cuenta por Unique ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Cuenta eliminada exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Cuenta no encontrada")
+    })
+    @DeleteMapping("/unique/{uniqueId}")
+    public ResponseEntity<Void> eliminarCuentaPorUniqueId(@PathVariable String uniqueId) {
+        try {
+            cuentaService.eliminarCuentaPorUniqueId(uniqueId);
+            return ResponseEntity.noContent().build();
+        } catch (EntityNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @Operation(summary = "Eliminar una cuenta por Identificación del Cliente")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Cuenta eliminada exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Cuenta no encontrada")
+    })
+    @DeleteMapping("/cliente/identificacion/{identificacion}")
+    public ResponseEntity<Void> eliminarCuentaPorIdentificacionCliente(@PathVariable String identificacion) {
+        try {
+            cuentaService.eliminarCuentaPorIdentificacionCliente(identificacion);
             return ResponseEntity.noContent().build();
         } catch (EntityNotFoundException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();

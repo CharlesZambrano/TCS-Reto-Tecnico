@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -37,17 +38,18 @@ public class Cuenta implements Serializable {
     private Long id;
 
     @NotBlank(message = "El identificador único no puede estar vacío")
-    @Size(max = 16)
+    @Size(max = 16, message = "El identificador único tiene maximo 16 caracteres")
     @Column(name = "unique_id", unique = true, nullable = false)
     private String uniqueId;
 
     @NotBlank(message = "El número de cuenta no puede estar vacío")
-    @Size(max = 20)
+    @Size(max = 20, message = "El número de cuenta tiene un máximo de 20 números")
+    @Pattern(regexp = "^[0-9]+$", message = "El número de cuenta solo debe contener dígitos numéricos")
     @Column(name = "numero_cuenta", unique = true, nullable = false)
     private String numeroCuenta;
 
     @NotBlank(message = "El tipo de cuenta no puede estar vacío")
-    @Size(max = 3)
+    @Size(max = 3, min = 3, message = "Los tipo de cuenta permitidos son 'AHO' = 'AHORROS' y 'COR' = 'CORRIENTE'")
     @Column(name = "tipo", nullable = false)
     private String tipo;
 

@@ -42,6 +42,13 @@ public class ClienteService {
         return clientePersonaMapper.clienteToClienteDTO(cliente);
     }
 
+    @Transactional(readOnly = true)
+    public ClienteDTO obtenerClientePorIdentificacion(String identificacion) {
+        Cliente cliente = clienteRepository.findByPersonaIdentificacion(identificacion)
+                .orElseThrow(() -> new EntityNotFoundException("Cliente con identificación no encontrado"));
+        return clientePersonaMapper.clienteToClienteDTO(cliente);
+    }
+
     @Transactional
     public ClienteDTO crearCliente(ClienteDTO clienteDTO) {
         Cliente cliente = clientePersonaMapper.clienteDTOToCliente(clienteDTO);
@@ -62,9 +69,30 @@ public class ClienteService {
         clienteExistente.setContraseña(clienteDTO.getContraseña());
         clienteExistente.setEstado(clienteDTO.getEstado());
         clienteExistente.getPersona().setNombre(clienteDTO.getPersona().getNombre());
+        clienteExistente.getPersona().setDireccion(clienteDTO.getPersona().getDireccion());
+        clienteExistente.getPersona().setTelefono(clienteDTO.getPersona().getTelefono());
         clienteRepository.save(clienteExistente);
 
         String mensaje = "Cliente actualizado con ID: " + clienteExistente.getId();
+        clientePublisher.publishClienteActualizado(mensaje);
+
+        return clientePersonaMapper.clienteToClienteDTO(clienteExistente);
+    }
+
+    @Transactional
+    public ClienteDTO actualizarClientePorIdentificacion(String identificacion, ClienteDTO clienteDTO) {
+        Cliente clienteExistente = clienteRepository.findByPersonaIdentificacion(identificacion)
+                .orElseThrow(() -> new EntityNotFoundException("Cliente no encontrado"));
+
+        clientePersonaMapper.clienteDTOToCliente(clienteDTO);
+        clienteExistente.setContraseña(clienteDTO.getContraseña());
+        clienteExistente.setEstado(clienteDTO.getEstado());
+        clienteExistente.getPersona().setNombre(clienteDTO.getPersona().getNombre());
+        clienteExistente.getPersona().setDireccion(clienteDTO.getPersona().getDireccion());
+        clienteExistente.getPersona().setTelefono(clienteDTO.getPersona().getTelefono());
+        clienteRepository.save(clienteExistente);
+
+        String mensaje = "Cliente actualizado con identificación: " + clienteExistente.getPersona().getIdentificacion();
         clientePublisher.publishClienteActualizado(mensaje);
 
         return clientePersonaMapper.clienteToClienteDTO(clienteExistente);
@@ -78,6 +106,17 @@ public class ClienteService {
         clienteRepository.delete(cliente);
 
         String mensaje = "Cliente eliminado con ID: " + cliente.getId();
+        clientePublisher.publishClienteEliminado(mensaje);
+    }
+
+    @Transactional
+    public void eliminarClientePorIdentificacion(String identificacion) {
+        Cliente cliente = clienteRepository.findByPersonaIdentificacion(identificacion)
+                .orElseThrow(() -> new EntityNotFoundException("Cliente con identificación no encontrado"));
+
+        clienteRepository.delete(cliente);
+
+        String mensaje = "Cliente eliminado con identificación: " + cliente.getPersona().getIdentificacion();
         clientePublisher.publishClienteEliminado(mensaje);
     }
 }

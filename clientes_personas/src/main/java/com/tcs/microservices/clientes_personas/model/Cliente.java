@@ -11,7 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -39,13 +39,14 @@ public class Cliente implements Serializable {
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "persona_id", referencedColumnName = "persona_id", unique = true)
+    @NotNull(message = "Se requieren los datos de la Persona")
     private Persona persona;
 
-    @NotBlank(message = "La contraseña no puede estar vacía")
-    @Size(min = 4, max = 10)
+    @Size(min = 4, max = 10, message = "La contraseña debe tener entre 4 y 10 caracteres")
     @Column(name = "contraseña", nullable = false)
     private String contraseña;
 
     @Column(name = "estado", nullable = false)
+    @NotNull(message = "El estado no puede estar vacío")
     private Boolean estado;
 }

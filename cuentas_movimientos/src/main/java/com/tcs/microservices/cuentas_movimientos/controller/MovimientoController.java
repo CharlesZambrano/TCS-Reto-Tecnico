@@ -71,6 +71,51 @@ public class MovimientoController {
         }
     }
 
+    @Operation(summary = "Obtener un movimiento por Unique ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Movimiento encontrado"),
+            @ApiResponse(responseCode = "404", description = "Movimiento no encontrado")
+    })
+    @GetMapping("/unique/{uniqueId}")
+    public ResponseEntity<MovimientoDTO> obtenerMovimientoPorUniqueId(@PathVariable String uniqueId) {
+        try {
+            MovimientoDTO movimiento = movimientoService.obtenerMovimientoPorUniqueId(uniqueId);
+            return ResponseEntity.ok(movimiento);
+        } catch (EntityNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @Operation(summary = "Obtener movimientos por tipo")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Movimientos encontrados"),
+            @ApiResponse(responseCode = "404", description = "Movimientos no encontrados")
+    })
+    @GetMapping("/tipo/{tipo}")
+    public ResponseEntity<List<MovimientoDTO>> obtenerMovimientosPorTipo(@PathVariable String tipo) {
+        try {
+            List<MovimientoDTO> movimientos = movimientoService.obtenerMovimientosPorTipo(tipo);
+            return ResponseEntity.ok(movimientos);
+        } catch (EntityNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @Operation(summary = "Obtener movimientos por número de cuenta")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Movimientos encontrados"),
+            @ApiResponse(responseCode = "404", description = "Movimientos no encontrados")
+    })
+    @GetMapping("/numero/{numeroCuenta}")
+    public ResponseEntity<List<MovimientoDTO>> obtenerMovimientosPorNumeroCuenta(@PathVariable String numeroCuenta) {
+        try {
+            List<MovimientoDTO> movimientos = movimientoService.obtenerMovimientosPorNumeroCuenta(numeroCuenta);
+            return ResponseEntity.ok(movimientos);
+        } catch (EntityNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
     @Operation(summary = "Crear un nuevo movimiento")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Movimiento creado exitosamente"),
@@ -109,7 +154,7 @@ public class MovimientoController {
         }
     }
 
-    @Operation(summary = "Eliminar un movimiento")
+    @Operation(summary = "Eliminar un movimiento por ID")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Movimiento eliminado exitosamente"),
             @ApiResponse(responseCode = "404", description = "Movimiento no encontrado")
