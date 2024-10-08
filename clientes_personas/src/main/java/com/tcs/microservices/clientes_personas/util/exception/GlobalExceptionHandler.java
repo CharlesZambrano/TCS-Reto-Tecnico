@@ -36,6 +36,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 
 @ControllerAdvice
@@ -56,7 +57,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(DataIntegrityViolationException ex,
             WebRequest request) {
-        return buildErrorResponse(ex, request, HttpStatus.CONFLICT, "Violación de integridad de datos",
+        return buildErrorResponse(ex, request, HttpStatus.CONFLICT,
+                "Violación de integridad de datos ya existe un registro con la misma cedula",
                 "DATA_INTEGRITY_VIOLATION");
     }
 
@@ -94,8 +96,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolationException(ConstraintViolationException ex,
             WebRequest request) {
-        return buildErrorResponse(ex, request, HttpStatus.BAD_REQUEST, "Violación de restricciones",
-                "CONSTRAINT_VIOLATION_ERROR");
+        // Tomamos el messageTemplate de las violaciones
+        List<String> details = ex.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessageTemplate)
+                .collect(Collectors.toList());
+
+        return buildErrorResponseWithDetails(ex, request, HttpStatus.BAD_REQUEST, "Violación de restricciones",
+                "CONSTRAINT_VIOLATION_ERROR", details);
     }
 
     @ExceptionHandler(BindException.class)
@@ -279,12 +286,15 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<ErrorResponse> buildErrorResponseWithDetails(Exception ex, WebRequest request,
             HttpStatus status, String errorMessage, String errorCode, List<String> details) {
+
+        String mainMessage = !details.isEmpty() ? details.get(0) : ex.getMessage();
+
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(status.value())
                 .error(errorMessage)
                 .code(errorCode)
-                .message(ex.getMessage())
+                .message(mainMessage)
                 .details(details)
                 .path(request.getDescription(false))
                 .method(request.getHeader("X-HTTP-Method-Override"))
