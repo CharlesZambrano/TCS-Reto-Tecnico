@@ -13,6 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -41,19 +42,21 @@ public class Movimiento implements Serializable {
     private Long id;
 
     @NotBlank(message = "El identificador único no puede estar vacío")
-    @Size(max = 16)
+    @Size(max = 16, message = "El identificador único tiene maximo 16 caracteres")
     @Column(name = "unique_id", unique = true, nullable = false)
     private String uniqueId;
 
+    @NotBlank(message = "La fecha no puede estar vacía")
     @Column(name = "fecha", nullable = false, updatable = false)
     private LocalDateTime fecha;
 
     @NotBlank(message = "El tipo de movimiento no puede estar vacío")
-    @Size(max = 3)
+    @Size(max = 3, min = 3, message = "Los tipo de cuenta permitidos son 'RET' = 'RETIROS' y 'DEP' = 'DEPOSITOS'")
     @Column(name = "tipo", nullable = false)
     private String tipo;
 
     @NotNull(message = "El valor del movimiento no puede estar vacío")
+    @DecimalMin(value = "0.0", inclusive = false, message = "El valor del movimiento debe ser mayor que cero")
     @Column(name = "valor", precision = 17, scale = 2, nullable = false)
     private BigDecimal valor;
 

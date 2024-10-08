@@ -14,7 +14,6 @@ public class ErrorResponse {
     private int status;
     private String error;
     private String code;
-    private String message;
     private List<String> details;
     private String path;
     private String method;
@@ -25,6 +24,5 @@ public class ErrorResponse {
     @Builder
     public static class ExceptionDetail {
         private String type;
-        private StackTraceElement[] trace;
     }
 }

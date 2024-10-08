@@ -1,5 +1,6 @@
 package com.tcs.microservices.cuentas_movimientos.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -57,12 +58,20 @@ public class CuentaService {
 
     @Transactional
     public CuentaDTO crearCuenta(CuentaDTO cuentaDTO) {
+        // Validar que el cliente existe antes de proceder
         validarClienteExistente(cuentaDTO.getClienteId());
 
+        // Validar que el saldo inicial no sea negativo
+        validarSaldoInicial(cuentaDTO.getSaldoInicial());
+
+        // Mapear el DTO a la entidad Cuenta
         Cuenta cuenta = cuentaMovimientoMapper.cuentaDTOToCuenta(cuentaDTO);
+        // Generar un uniqueId para la cuenta
         cuenta.setUniqueId(uniqueIdGeneration.getUniqueId());
+        // Guardar la cuenta en el repositorio
         cuenta = cuentaRepository.save(cuenta);
 
+        // Devolver el DTO mapeado desde la entidad
         return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta);
     }
 
@@ -97,6 +106,13 @@ public class CuentaService {
             }
         } catch (HttpClientErrorException.NotFound e) {
             throw new ClienteNoEncontradoException("Cliente no encontrado con el ID: " + clienteId);
+        }
+    }
+
+    private void validarSaldoInicial(BigDecimal saldoInicial) {
+        // Verifica que el saldo inicial sea mayor o igual a 0
+        if (saldoInicial.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("El saldo inicial no puede ser negativo para ningún tipo de cuenta.");
         }
     }
 }
