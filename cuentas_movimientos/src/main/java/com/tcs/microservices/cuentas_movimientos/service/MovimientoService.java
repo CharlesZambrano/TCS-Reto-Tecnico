@@ -49,6 +49,35 @@ public class MovimientoService {
         return cuentaMovimientoMapper.movimientoToMovimientoDTO(movimiento);
     }
 
+    @Transactional(readOnly = true)
+    public MovimientoDTO obtenerMovimientoPorUniqueId(String uniqueId) {
+        Movimiento movimiento = movimientoRepository.findByUniqueId(uniqueId)
+                .orElseThrow(() -> new EntityNotFoundException("Movimiento no encontrado con uniqueId: " + uniqueId));
+        return cuentaMovimientoMapper.movimientoToMovimientoDTO(movimiento);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimientoDTO> obtenerMovimientosPorTipo(String tipo) {
+        List<Movimiento> movimientos = movimientoRepository.findByTipo(tipo);
+        if (movimientos.isEmpty()) {
+            throw new EntityNotFoundException("No se encontraron movimientos con el tipo: " + tipo);
+        }
+        return movimientos.stream()
+                .map(cuentaMovimientoMapper::movimientoToMovimientoDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimientoDTO> obtenerMovimientosPorNumeroCuenta(String numeroCuenta) {
+        List<Movimiento> movimientos = movimientoRepository.findByCuenta_NumeroCuenta(numeroCuenta);
+        if (movimientos.isEmpty()) {
+            throw new EntityNotFoundException("No se encontraron movimientos para la cuenta: " + numeroCuenta);
+        }
+        return movimientos.stream()
+                .map(cuentaMovimientoMapper::movimientoToMovimientoDTO)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public MovimientoDTO crearMovimiento(MovimientoDTO movimientoDTO) {
         Cuenta cuenta = cuentaRepository.findByNumeroCuenta(movimientoDTO.getNumeroCuenta())
@@ -101,7 +130,12 @@ public class MovimientoService {
 
         movimientoExistente.setTipo(movimientoDTO.getTipo());
         movimientoExistente.setValor(movimientoDTO.getValor());
-        movimientoExistente.getCuenta().setNumeroCuenta(movimientoDTO.getNumeroCuenta());
+
+        if (!movimientoExistente.getCuenta().getNumeroCuenta().equals(movimientoDTO.getNumeroCuenta())) {
+            Cuenta cuenta = cuentaRepository.findByNumeroCuenta(movimientoDTO.getNumeroCuenta())
+                    .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada"));
+            movimientoExistente.setCuenta(cuenta);
+        }
 
         movimientoRepository.save(movimientoExistente);
         return cuentaMovimientoMapper.movimientoToMovimientoDTO(movimientoExistente);

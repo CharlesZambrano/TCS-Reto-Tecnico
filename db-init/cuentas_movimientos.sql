@@ -46,15 +46,12 @@ CREATE INDEX IF NOT EXISTS idx_cuenta_cliente_id ON cuenta (cliente_id);
 CREATE INDEX IF NOT EXISTS idx_movimiento_fecha ON movimiento (fecha);
 CREATE INDEX IF NOT EXISTS idx_movimiento_cuenta ON movimiento (numero_cuenta);
 
-
--- Inserción de datos en la tabla 'cuenta'
 INSERT INTO cuenta (unique_id, numero_cuenta, tipo, saldo_inicial, estado, cliente_id) 
 VALUES 
 ('UID1234567890AB', '1234567890', 'COR', 1500.00, true, 1),
 ('UID0987654321CD', '0987654321', 'AHO', 1000.00, true, 2),
 ('UID5678901234EF', '5678901234', 'COR', 500.00, true, 3);
 
--- Inserción de datos en la tabla 'movimiento'
 INSERT INTO movimiento (unique_id, tipo, valor, saldo_inicial, saldo_disponible, numero_cuenta) 
 VALUES 
 ('MUID1234567890A', 'DEP', 200.00, 1500.00, 1700.00, '1234567890'),
