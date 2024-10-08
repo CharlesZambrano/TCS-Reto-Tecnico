@@ -6,8 +6,6 @@ public class ClienteDTO {
     private Boolean estado;
     private PersonaDTO persona;
 
-    // Getters y Setters
-
     public Long getId() {
         return id;
     }

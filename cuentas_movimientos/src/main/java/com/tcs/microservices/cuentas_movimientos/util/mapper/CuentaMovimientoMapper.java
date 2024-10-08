@@ -19,6 +19,7 @@ public interface CuentaMovimientoMapper {
 
         @Mappings({
                         @Mapping(target = "cliente.id", source = "clienteDTO.id"),
+                        @Mapping(target = "cliente.contraseña", source = "clienteDTO.contraseña"),
                         @Mapping(target = "cliente.estado", source = "clienteDTO.estado"),
                         @Mapping(target = "cliente.persona.id", source = "clienteDTO.persona.id"),
                         @Mapping(target = "cliente.persona.nombre", source = "clienteDTO.persona.nombre"),

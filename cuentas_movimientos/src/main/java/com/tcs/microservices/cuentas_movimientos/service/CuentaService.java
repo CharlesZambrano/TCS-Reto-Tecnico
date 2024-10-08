@@ -46,7 +46,6 @@ public class CuentaService {
         return cuentaRepository.findAll()
                 .stream()
                 .map(cuenta -> {
-                    // Obtener el cliente y su persona asociada
                     ClienteDTO clienteDTO = obtenerCliente(cuenta.getClienteId());
                     return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta, clienteDTO);
                 })
@@ -57,30 +56,22 @@ public class CuentaService {
     public CuentaDTO obtenerCuentaPorId(Long id) {
         Cuenta cuenta = cuentaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada"));
-        // Obtener el cliente y su persona asociada
         ClienteDTO clienteDTO = obtenerCliente(cuenta.getClienteId());
         return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta, clienteDTO);
     }
 
     @Transactional
     public CuentaDTO crearCuenta(CuentaDTO cuentaDTO) {
-        // Validar que el cliente existe antes de proceder
         validarClienteExistente(cuentaDTO.getCliente().getId());
 
-        // Validar que el saldo inicial no sea negativo
         validarSaldoInicial(cuentaDTO.getSaldoInicial());
 
-        // Mapear el DTO a la entidad Cuenta
         Cuenta cuenta = cuentaMovimientoMapper.cuentaDTOToCuenta(cuentaDTO);
-        // Generar un uniqueId para la cuenta
         cuenta.setUniqueId(uniqueIdGeneration.getUniqueId());
-        // Guardar la cuenta en el repositorio
         cuenta = cuentaRepository.save(cuenta);
 
-        // Obtener el cliente asociado para devolver la estructura completa
         ClienteDTO clienteDTO = obtenerCliente(cuenta.getClienteId());
 
-        // Devolver el DTO mapeado desde la entidad con la información del cliente
         return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta, clienteDTO);
     }
 
@@ -94,7 +85,6 @@ public class CuentaService {
         cuentaExistente.setSaldoInicial(cuentaDTO.getSaldoInicial());
         cuentaRepository.save(cuentaExistente);
 
-        // Obtener el cliente asociado para devolver la estructura completa
         ClienteDTO clienteDTO = obtenerCliente(cuentaExistente.getClienteId());
 
         return cuentaMovimientoMapper.cuentaToCuentaDTO(cuentaExistente, clienteDTO);
@@ -131,7 +121,6 @@ public class CuentaService {
     }
 
     private void validarSaldoInicial(BigDecimal saldoInicial) {
-        // Verifica que el saldo inicial sea mayor o igual a 0
         if (saldoInicial.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("El saldo inicial no puede ser negativo para ningún tipo de cuenta.");
         }

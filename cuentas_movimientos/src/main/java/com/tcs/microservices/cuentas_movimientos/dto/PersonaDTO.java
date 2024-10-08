@@ -9,8 +9,6 @@ public class PersonaDTO {
     private String direccion;
     private String telefono;
 
-    // Getters y Setters
-
     public Long getId() {
         return id;
     }
