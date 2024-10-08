@@ -67,6 +67,21 @@ public class ClienteController {
         }
     }
 
+    @Operation(summary = "Obtener un cliente por identificación")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cliente encontrado"),
+            @ApiResponse(responseCode = "404", description = "Cliente no encontrado")
+    })
+    @GetMapping("/identificacion/{identificacion}")
+    public ResponseEntity<ClienteDTO> obtenerClientePorIdentificacion(@PathVariable String identificacion) {
+        try {
+            ClienteDTO cliente = clienteService.obtenerClientePorIdentificacion(identificacion);
+            return ResponseEntity.ok(cliente);
+        } catch (EntityNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
     @Operation(summary = "Crear un nuevo cliente")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Cliente creado exitosamente"),
@@ -78,7 +93,7 @@ public class ClienteController {
         return new ResponseEntity<>(nuevoCliente, HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Actualizar un cliente")
+    @Operation(summary = "Actualizar un cliente por ID")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Cliente actualizado exitosamente"),
             @ApiResponse(responseCode = "400", description = "Error en la validación de los datos del cliente"),
@@ -95,7 +110,25 @@ public class ClienteController {
         }
     }
 
-    @Operation(summary = "Eliminar un cliente")
+    @Operation(summary = "Actualizar un cliente por identificación")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cliente actualizado exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Error en la validación de los datos del cliente"),
+            @ApiResponse(responseCode = "404", description = "Cliente no encontrado")
+    })
+    @PutMapping("/identificacion/{identificacion}")
+    public ResponseEntity<ClienteDTO> actualizarClientePorIdentificacion(@PathVariable String identificacion,
+            @Validated @RequestBody ClienteDTO clienteDTO) {
+        try {
+            ClienteDTO clienteActualizado = clienteService.actualizarClientePorIdentificacion(identificacion,
+                    clienteDTO);
+            return ResponseEntity.ok(clienteActualizado);
+        } catch (EntityNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @Operation(summary = "Eliminar un cliente por ID")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Cliente eliminado exitosamente"),
             @ApiResponse(responseCode = "404", description = "Cliente no encontrado")
@@ -104,6 +137,21 @@ public class ClienteController {
     public ResponseEntity<Void> eliminarCliente(@PathVariable Long id) {
         try {
             clienteService.eliminarCliente(id);
+            return ResponseEntity.noContent().build();
+        } catch (EntityNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @Operation(summary = "Eliminar un cliente por identificación")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Cliente eliminado exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Cliente no encontrado")
+    })
+    @DeleteMapping("/identificacion/{identificacion}")
+    public ResponseEntity<Void> eliminarClientePorIdentificacion(@PathVariable String identificacion) {
+        try {
+            clienteService.eliminarClientePorIdentificacion(identificacion);
             return ResponseEntity.noContent().build();
         } catch (EntityNotFoundException ex) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
