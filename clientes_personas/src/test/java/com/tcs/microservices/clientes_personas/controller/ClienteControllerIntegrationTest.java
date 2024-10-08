@@ -33,28 +33,20 @@ public class ClienteControllerIntegrationTest {
         private ClientePublisher clientePublisher;
 
         @Test
-        public void testObtenerClientes() throws Exception {
-                mockMvc.perform(get("/api/v1/clientes")
-                                .contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(status().isOk())
-                                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(jsonPath("$").isArray());
-        }
-
-        @Test
         public void testCrearCliente() throws Exception {
                 PersonaDTO personaDTO = PersonaDTO.builder()
                                 .id(1L)
                                 .nombre("John Doe")
                                 .genero("MAS")
-                                .identificacion("1234567890")
+                                .edad(25) // Edad válida mayor a 18
+                                .identificacion("0102030405") // Identificación válida
                                 .direccion("123 Calle Falsa")
-                                .telefono("5551234567")
+                                .telefono("0998271630") // Teléfono válido
                                 .build();
 
                 ClienteDTO clienteDTO = ClienteDTO.builder()
                                 .id(1L)
-                                .contraseña("pass1234")
+                                .contraseña("1111")
                                 .estado(true)
                                 .persona(personaDTO)
                                 .build();
@@ -64,11 +56,46 @@ public class ClienteControllerIntegrationTest {
                 assertNotNull(clienteDTO.getPersona().getIdentificacion(), "Identificación no puede ser nula");
 
                 String jsonContent = objectMapper.writeValueAsString(clienteDTO);
-                System.out.println("JSON Enviado: " + jsonContent);
 
                 mockMvc.perform(post("/api/v1/clientes")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(jsonContent))
                                 .andExpect(status().isCreated());
+        }
+
+        @Test
+        public void testObtenerClientes() throws Exception {
+                // Crear un cliente de prueba antes de realizar la consulta
+                PersonaDTO personaDTO = PersonaDTO.builder()
+                                .id(1L)
+                                .nombre("John Doe")
+                                .genero("MAS")
+                                .edad(25) // Edad válida
+                                .identificacion("0102030405") // Identificación válida
+                                .direccion("123 Calle Falsa")
+                                .telefono("0998271630") // Teléfono válido
+                                .build();
+
+                ClienteDTO clienteDTO = ClienteDTO.builder()
+                                .id(1L)
+                                .contraseña("1111")
+                                .estado(true)
+                                .persona(personaDTO)
+                                .build();
+
+                String jsonContent = objectMapper.writeValueAsString(clienteDTO);
+
+                // Insertar cliente de prueba
+                mockMvc.perform(post("/api/v1/clientes")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonContent))
+                                .andExpect(status().isCreated());
+
+                // Ahora realizar la consulta de clientes
+                mockMvc.perform(get("/api/v1/clientes")
+                                .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isOk())
+                                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(jsonPath("$").isArray());
         }
 }

@@ -45,7 +45,11 @@ public class CuentaService {
     public List<CuentaDTO> obtenerCuentas() {
         return cuentaRepository.findAll()
                 .stream()
-                .map(cuentaMovimientoMapper::cuentaToCuentaDTO)
+                .map(cuenta -> {
+                    // Obtener el cliente y su persona asociada
+                    ClienteDTO clienteDTO = obtenerCliente(cuenta.getClienteId());
+                    return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta, clienteDTO);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -53,13 +57,15 @@ public class CuentaService {
     public CuentaDTO obtenerCuentaPorId(Long id) {
         Cuenta cuenta = cuentaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cuenta no encontrada"));
-        return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta);
+        // Obtener el cliente y su persona asociada
+        ClienteDTO clienteDTO = obtenerCliente(cuenta.getClienteId());
+        return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta, clienteDTO);
     }
 
     @Transactional
     public CuentaDTO crearCuenta(CuentaDTO cuentaDTO) {
         // Validar que el cliente existe antes de proceder
-        validarClienteExistente(cuentaDTO.getClienteId());
+        validarClienteExistente(cuentaDTO.getCliente().getId());
 
         // Validar que el saldo inicial no sea negativo
         validarSaldoInicial(cuentaDTO.getSaldoInicial());
@@ -71,8 +77,11 @@ public class CuentaService {
         // Guardar la cuenta en el repositorio
         cuenta = cuentaRepository.save(cuenta);
 
-        // Devolver el DTO mapeado desde la entidad
-        return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta);
+        // Obtener el cliente asociado para devolver la estructura completa
+        ClienteDTO clienteDTO = obtenerCliente(cuenta.getClienteId());
+
+        // Devolver el DTO mapeado desde la entidad con la información del cliente
+        return cuentaMovimientoMapper.cuentaToCuentaDTO(cuenta, clienteDTO);
     }
 
     @Transactional
@@ -85,7 +94,10 @@ public class CuentaService {
         cuentaExistente.setSaldoInicial(cuentaDTO.getSaldoInicial());
         cuentaRepository.save(cuentaExistente);
 
-        return cuentaMovimientoMapper.cuentaToCuentaDTO(cuentaExistente);
+        // Obtener el cliente asociado para devolver la estructura completa
+        ClienteDTO clienteDTO = obtenerCliente(cuentaExistente.getClienteId());
+
+        return cuentaMovimientoMapper.cuentaToCuentaDTO(cuentaExistente, clienteDTO);
     }
 
     @Transactional
@@ -107,6 +119,15 @@ public class CuentaService {
         } catch (HttpClientErrorException.NotFound e) {
             throw new ClienteNoEncontradoException("Cliente no encontrado con el ID: " + clienteId);
         }
+    }
+
+    private ClienteDTO obtenerCliente(Long clienteId) {
+        String url = clientesPersonasBaseUrl + "/clientes/" + clienteId;
+        ResponseEntity<ClienteDTO> response = restTemplate.getForEntity(url, ClienteDTO.class);
+        if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null) {
+            throw new ClienteNoEncontradoException("Cliente no encontrado con el ID: " + clienteId);
+        }
+        return response.getBody();
     }
 
     private void validarSaldoInicial(BigDecimal saldoInicial) {

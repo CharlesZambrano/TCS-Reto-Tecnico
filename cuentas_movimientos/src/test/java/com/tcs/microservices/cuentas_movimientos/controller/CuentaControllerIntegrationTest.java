@@ -60,14 +60,20 @@ public class CuentaControllerIntegrationTest {
 
         @BeforeEach
         public void setup() {
-                cuentaDTO = CuentaDTO.builder()
-                                .id(1L)
-                                .numeroCuenta("1234567890")
-                                .tipo("COR")
-                                .saldoInicial(new BigDecimal("1000.00"))
-                                .estado(true)
-                                .clienteId(1L)
-                                .build();
+                ClienteDTO clienteDTO = new ClienteDTO();
+                clienteDTO.setId(1L);
+                clienteDTO.setContraseña("password");
+                clienteDTO.setEstado(true);
+                clienteDTO.setPersona(new PersonaDTO());
+
+                // En lugar de usar el builder, asignamos los valores directamente
+                cuentaDTO = new CuentaDTO();
+                cuentaDTO.setId(1L);
+                cuentaDTO.setNumeroCuenta("1234567890");
+                cuentaDTO.setTipo("COR");
+                cuentaDTO.setSaldoInicial(new BigDecimal("1000.00"));
+                cuentaDTO.setEstado(true);
+                cuentaDTO.setCliente(clienteDTO);
 
                 Cuenta cuenta = new Cuenta();
                 cuenta.setId(1L);
@@ -77,15 +83,11 @@ public class CuentaControllerIntegrationTest {
 
                 when(cuentaMovimientoMapper.cuentaDTOToCuenta(any(CuentaDTO.class))).thenReturn(cuenta);
                 when(cuentaRepository.save(any(Cuenta.class))).thenReturn(cuenta);
-                when(cuentaMovimientoMapper.cuentaToCuentaDTO(any(Cuenta.class))).thenReturn(cuentaDTO);
 
-                ClienteDTO clienteDTO = new ClienteDTO();
-                clienteDTO.setId(1L);
-                clienteDTO.setContraseña("password");
-                clienteDTO.setEstado(true);
-                clienteDTO.setPersona(new PersonaDTO());
+                when(cuentaMovimientoMapper.cuentaToCuentaDTO(any(Cuenta.class), any(ClienteDTO.class)))
+                                .thenReturn(cuentaDTO);
 
-                when(restTemplate.getForEntity(eq("http://clientes-personas:8080/api/v1/clientes/1"),
+                when(restTemplate.getForEntity(eq("http://clientes-personas:8080/api/v1/clientes/5"),
                                 eq(ClienteDTO.class)))
                                 .thenReturn(new ResponseEntity<>(clienteDTO, HttpStatus.OK));
 

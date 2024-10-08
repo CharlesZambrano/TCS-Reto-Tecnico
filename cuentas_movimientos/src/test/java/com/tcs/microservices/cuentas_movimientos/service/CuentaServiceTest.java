@@ -50,19 +50,25 @@ public class CuentaServiceTest {
     public void setup() {
         ReflectionTestUtils.setField(cuentaService, "clientesPersonasBaseUrl", "http://clientes-personas:8080");
 
+        ClienteDTO clienteDTO = new ClienteDTO();
+        clienteDTO.setId(1L);
+        clienteDTO.setContraseña("password");
+        clienteDTO.setEstado(true);
+        clienteDTO.setPersona(new PersonaDTO());
+
         cuenta = new Cuenta();
         cuenta.setId(1L);
         cuenta.setNumeroCuenta("1234567890");
         cuenta.setEstado(true);
         cuenta.setSaldoInicial(new BigDecimal("1000.00"));
 
-        cuentaDTO = CuentaDTO.builder()
-                .id(1L)
-                .numeroCuenta("1234567890")
-                .saldoInicial(new BigDecimal("1000.00"))
-                .estado(true)
-                .clienteId(1L)
-                .build();
+        // En lugar de usar el builder, asignamos los valores directamente
+        cuentaDTO = new CuentaDTO();
+        cuentaDTO.setId(1L);
+        cuentaDTO.setNumeroCuenta("1234567890");
+        cuentaDTO.setSaldoInicial(new BigDecimal("1000.00"));
+        cuentaDTO.setEstado(true);
+        cuentaDTO.setCliente(clienteDTO);
     }
 
     @Test
@@ -73,12 +79,14 @@ public class CuentaServiceTest {
         clienteDTO.setEstado(true);
         clienteDTO.setPersona(new PersonaDTO());
 
-        when(restTemplate.getForEntity(eq("http://clientes-personas:8080/clientes/1"), eq(ClienteDTO.class)))
+        when(restTemplate.getForEntity(eq("http://clientes-personas:8080/clientes/5"), eq(ClienteDTO.class)))
                 .thenReturn(new ResponseEntity<>(clienteDTO, HttpStatus.OK));
 
         when(cuentaMovimientoMapper.cuentaDTOToCuenta(any(CuentaDTO.class))).thenReturn(cuenta);
         when(cuentaRepository.save(any(Cuenta.class))).thenReturn(cuenta);
-        when(cuentaMovimientoMapper.cuentaToCuentaDTO(any(Cuenta.class))).thenReturn(cuentaDTO);
+
+        when(cuentaMovimientoMapper.cuentaToCuentaDTO(any(Cuenta.class), any(ClienteDTO.class)))
+                .thenReturn(cuentaDTO);
 
         when(uniqueIdGeneration.getUniqueId()).thenReturn("some-unique-id");
 
