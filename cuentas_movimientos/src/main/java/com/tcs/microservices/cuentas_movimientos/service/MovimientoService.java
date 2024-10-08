@@ -8,11 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tcs.microservices.cuentas_movimientos.dto.MovimientoDTO;
-import com.tcs.microservices.cuentas_movimientos.exception.SaldoInsuficienteException;
 import com.tcs.microservices.cuentas_movimientos.model.Cuenta;
 import com.tcs.microservices.cuentas_movimientos.model.Movimiento;
 import com.tcs.microservices.cuentas_movimientos.repository.CuentaRepository;
 import com.tcs.microservices.cuentas_movimientos.repository.MovimientoRepository;
+import com.tcs.microservices.cuentas_movimientos.util.exception.SaldoInsuficienteException;
 import com.tcs.microservices.cuentas_movimientos.util.mapper.CuentaMovimientoMapper;
 import com.tcs.microservices.cuentas_movimientos.util.mapper.UniqueIdGeneration;
 

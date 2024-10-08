@@ -13,9 +13,9 @@ import org.springframework.web.client.RestTemplate;
 
 import com.tcs.microservices.cuentas_movimientos.dto.ClienteDTO;
 import com.tcs.microservices.cuentas_movimientos.dto.CuentaDTO;
-import com.tcs.microservices.cuentas_movimientos.exception.ClienteNoEncontradoException;
 import com.tcs.microservices.cuentas_movimientos.model.Cuenta;
 import com.tcs.microservices.cuentas_movimientos.repository.CuentaRepository;
+import com.tcs.microservices.cuentas_movimientos.util.exception.ClienteNoEncontradoException;
 import com.tcs.microservices.cuentas_movimientos.util.mapper.CuentaMovimientoMapper;
 import com.tcs.microservices.cuentas_movimientos.util.mapper.UniqueIdGeneration;
 

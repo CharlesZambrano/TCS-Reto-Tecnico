@@ -297,4 +297,17 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(errorResponse, status);
     }
+
+    // 1. Excepciones personalizadas
+    @ExceptionHandler(ClienteNoEncontradoException.class)
+    public ResponseEntity<ErrorResponse> handleClienteNoEncontradoException(ClienteNoEncontradoException ex,
+            WebRequest request) {
+        return buildErrorResponse(ex, request, HttpStatus.NOT_FOUND, "Cliente no encontrado", "CLIENT_NOT_FOUND");
+    }
+
+    @ExceptionHandler(SaldoInsuficienteException.class)
+    public ResponseEntity<ErrorResponse> handleSaldoInsuficienteException(SaldoInsuficienteException ex,
+            WebRequest request) {
+        return buildErrorResponse(ex, request, HttpStatus.BAD_REQUEST, "Saldo insuficiente", "INSUFFICIENT_BALANCE");
+    }
 }
